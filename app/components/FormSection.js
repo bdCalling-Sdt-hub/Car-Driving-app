@@ -128,9 +128,9 @@ const FormSection = ({
             style={tw`font-bold text-lg border border-gray-300 rounded mb-3 flex-1`}
           >
             <Picker
-              selectedValue={formData.trailer}
+              selectedValue={formData.truck}
               onValueChange={(value) =>
-                setFormData({ ...formData, trailer: value })
+                setFormData({ ...formData, truck: value })
               }
             >
               <Picker.Item label="trucklist" value="trucklist" />
@@ -148,9 +148,9 @@ const FormSection = ({
             style={tw`font-bold text-lg border border-gray-300 rounded mb-3 flex-1`}
           >
             <Picker
-              selectedValue={formData.tractor}
+              selectedValue={formData.trailer}
               onValueChange={(value) =>
-                setFormData({ ...formData, tractor: value })
+                setFormData({ ...formData, trailer: value })
               }
             >
               <Picker.Item label="trailerlist" value="trailerlist" />

@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } fro
 import { Picker } from '@react-native-picker/picker';
 import tw from 'twrnc';
 import Header from './components/Header';
-import { useNavigation } from '@react-navigation/native';
+import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import AsyncStorage, { useAsyncStorage } from '@react-native-async-storage/async-storage';
 import { useActivityDropDownListQuery, useStartNewTripMutation, useTrucksandtailorsQuery } from './redux/features/tripApis/TripApi';
@@ -28,14 +28,15 @@ const DateSection = () => (
 
 
 const HomeScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+
   const [apikey, setApikey] = useState("");
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     activity: "",
     location: "",
     currentTime: "",
-    tractor: "",
+    truck: "",
     trailer: "",
     odometer: "",
   });
@@ -65,7 +66,7 @@ const HomeScreen = () => {
     console.log("Form Data:", formData);
 
     // Check if all required fields are filled
-    if (!formData.activity || !formData.location || !formData.currentTime || !formData.tractor || !formData.trailer || !formData.odometer) {
+    if (!formData.activity || !formData.location || !formData.currentTime || !formData.truck || !formData.trailer || !formData.odometer) {
       return Alert.alert("Error", "Please fill all the fields");
     }
 
@@ -76,7 +77,7 @@ const HomeScreen = () => {
           timestamp: formData.currentTime,
           location: formData.location,
           odometer: formData.odometer,
-          truck: formData.tractor,
+          truck: formData.truck,
           trailer: formData.trailer,
           // notes: "Trip started via mobile app.",
         },
@@ -86,15 +87,16 @@ const HomeScreen = () => {
     try {
       setLoading(true);
       const response = await startNewTrip({ apikey, ...tripData }).unwrap();
-
+      console.log("Trip Response:", response);
       // const data = response?.data;
       if(response?.data?.code === 'invalid'){
         Alert.alert("Login Error", "Invalid email or password.");
       }
       if(response?.data?.code === 'success'){
+        AsyncStorage.setItem("startedTrip", JSON.stringify(response?.data));
         Alert.alert("Success", "Trip started successfully!");
-        navigation.navigate("AddTrip", { response }); 
 
+        navigation.navigate("AddTrip");
       }
  
       // navigation.navigate("AddTrip", { ...formData });

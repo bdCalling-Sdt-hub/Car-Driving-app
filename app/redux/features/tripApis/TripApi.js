@@ -8,6 +8,18 @@ const TripApi = api.injectEndpoints({
         method: "GET",
       }),
     }),
+    TypeDropDownList: builder.query({
+      query: ({ apikey }) => ({
+        url: `/loadtypesdropdown.php?apikey=${apikey}`,
+        method: "GET",
+      }),
+    }),
+
+
+
+
+
+
    Trucksandtailors: builder.query({
       query: ({ apikey }) => ({
         url: `/equipmentlist.php?apikey=${apikey}`,
@@ -26,7 +38,7 @@ const TripApi = api.injectEndpoints({
     
 
     AddTripAcvity: builder.mutation({
-      query: (body) => ({
+      query: ({apikey,body}) => ({
         url: `/trip.php?apikey=${apikey}`,
         method: "POST",
         body,
@@ -61,5 +73,5 @@ const TripApi = api.injectEndpoints({
   }),
 });
 
-export const { useActivityDropDownListQuery, useTrucksandtailorsQuery, useStartNewTripMutation, useAddTripAcvityMutation, useFinishTripMutation, useHeaderLogoQuery } = TripApi;
+export const { useActivityDropDownListQuery, useTrucksandtailorsQuery, useStartNewTripMutation, useAddTripAcvityMutation, useFinishTripMutation, useHeaderLogoQuery ,useTypeDropDownListQuery } = TripApi;
 export default TripApi;

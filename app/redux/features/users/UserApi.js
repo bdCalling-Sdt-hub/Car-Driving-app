@@ -22,9 +22,16 @@ const userApi = api.injectEndpoints({
         }),
         invalidatesTags: ["user"],
       }),
+
+    authenticateUser: builder.query({
+      query: ({ apikey}) => ({
+        url: `/validate_user.php?apikey=${apikey}`,
+        method: "GET",
+      }),
+    }),
       
   }),
 });
 
-export const { useRegisterUserMutation, useLoginUserMutation } = userApi;
+export const { useRegisterUserMutation, useLoginUserMutation, useAuthenticateUserQuery } = userApi;
 export default userApi; // ✅ Add default export

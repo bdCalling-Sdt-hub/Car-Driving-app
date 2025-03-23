@@ -8,14 +8,18 @@ import {
   SafeAreaView,
   StatusBar,
   Alert,
-  Modal
+  Modal,
+  FlatList
 } from 'react-native';
-import { Ionicons, MaterialIcons, AntDesign } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons, AntDesign, FontAwesome } from '@expo/vector-icons';
 import tw from 'twrnc'; // Import twrnc
 
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Header from './components/Header';
-
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { RootStackParamList } from './components/types';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useActivityDropDownListQuery, useAddTripAcvityMutation, useTypeDropDownListQuery } from './redux/features/tripApis/TripApi';
 // Define TypeScript interfaces
 interface TripDetailItemProps {
   type: string;
@@ -38,15 +42,16 @@ interface TripLocation {
 }
 
 interface Trip {
-  id: string;
+  id: any;
   activity: string;
   consignee: string;
-  deliveryTime: string;
+  timestamp: string;
   quantity: string;
   type: string;
-  receiverName: string;
-  date: string;
-  locations: TripLocation[];
+  partyname: string;
+  notes: string;
+  location: string;
+  locations?: string;
 }
 
 // Trip detail item component
@@ -83,40 +88,49 @@ const TripDetailItem: React.FC<TripDetailItemProps> = ({ type, time, location, n
   );
 };
 
-// Activity options
-const activityOptions = [
-  'Dropoff/ Delivery',
-  'Pickup',
-  'Delivery',
-  'Return',
-  'Other'
-];
 
-// Type options
-const typeOptions = [
-  'Package',
-  'Document',
-  'Pallet',
-  'Container',
-  'Other'
-];
 
-const AddTrip: React.FC = () => {
+type AddTripProps = NativeStackScreenProps<RootStackParamList, "AddTrip">;
+const AddTrip: React.FC<AddTripProps> = () => {
+  const route = useRoute();
   // Form state
   const [activity, setActivity] = useState<string>('Dropoff/ Delivery');
-  const [consignee, setConsignee] = useState<string>('Dropoff Location (Google)');
+  const [consignee, setConsignee] = useState<string>('');
   const [deliveryTime, setDeliveryTime] = useState<string>('8:00 AM');
   const [quantity, setQuantity] = useState<string>('1');
   const [type, setType] = useState<string>('Package');
   const [receiverName, setReceiverName] = useState<string>('');
   const [note, setNote] = useState<string>('');
-
-
+  const [startedTrip, setStartedTrip] = useState(null);
+  const [AddTripAcvity] = useAddTripAcvityMutation();
+  const [apikey, setApikey] = useState<string>('');
   const Navigation = useNavigation();
-  const route = useRoute();
-  const { response } = route.params; 
 
-  console.log("Received Trip response:", response);
+
+  const [tripAcvitys, setTripAcvitys] = useState([]);
+
+  useEffect(() => {
+    const getTrips = async () => {
+      try {
+        const trips = await AsyncStorage.getItem('startedTrip');
+        console.log("Raw AsyncStorage Data:", trips)
+        if (trips) {
+          const parsedTrips = JSON.parse(trips);
+          console.log("Parsed Trips:", parsedTrips);
+          setStartedTrip(parsedTrips);
+        }
+      } catch (error) {
+        console.error('Error retrieving trips:', error);
+        Navigation.navigate('HomeScreen');
+      }
+    };
+
+    getTrips();
+  }, [ Navigation ]);
+
+
+  console.log('startedTrip-----------', startedTrip);
+
   const [trips, setTrips] = useState<Trip[]>([]);
   const [currentTrip, setCurrentTrip] = useState<Trip | null>(null);
 
@@ -142,36 +156,8 @@ const AddTrip: React.FC = () => {
 
   const currentDate = getCurrentDate();
 
-  // Initialize a default trip on component mount
-  useEffect(() => {
-    createNewTrip();
-  }, []);
 
-  // Create a new trip with default values
-  const createNewTrip = () => {
-    const newTrip: Trip = {
-      id: Date.now().toString(),
-      activity: activity,
-      consignee: consignee,
-      deliveryTime: deliveryTime,
-      quantity: quantity,
-      type: type,
-      receiverName: receiverName,
-      date: currentDate,
-      locations: [
-        {
-          id: '1',
-          type: 'Start',
-          leaveTime: formatDateTime(new Date()),
-          location: 'Current Location',
-          status: 'start'
-        }
-      ]
-    };
 
-    setCurrentTrip(newTrip);
-    setTrips([...trips, newTrip]);
-  };
 
   // Format date and time
   const formatDateTime = (date: Date): string => {
@@ -190,107 +176,85 @@ const AddTrip: React.FC = () => {
   };
 
   // Add a new location to the current trip
-  const addLocation = (locationType: string) => {
-    if (!currentTrip) return;
 
-    const now = new Date();
-    const newLocation: TripLocation = {
-      id: Date.now().toString(),
-      type: locationType,
-      leaveTime: formatDateTime(now),
-      location: consignee,
-      note: note,
-      status: locationType.toLowerCase()
-    };
-
-    const updatedLocations = [...currentTrip.locations, newLocation];
-
-    // Add a waiting status if needed
-    if (locationType === 'Pickup 1') {
-      const waitingTime = new Date(now.getTime() + 25 * 60000); // 25 minutes later
-      const waitingLocation: TripLocation = {
-        id: Date.now().toString() + '-waiting',
-        type: '',
-        leaveTime: `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} - ${waitingTime.getHours().toString().padStart(2, '0')}:${waitingTime.getMinutes().toString().padStart(2, '0')}`,
-        location: '',
-        status: 'waiting',
-        waiting: true
-      };
-      updatedLocations.push(waitingLocation);
-    }
-    const updatedTrip = {
-      ...currentTrip,
-      locations: updatedLocations
-    };
-
-    setCurrentTrip(updatedTrip);
-
-    // Update the trips array
-    const updatedTrips = trips.map(trip =>
-      trip.id === currentTrip.id ? updatedTrip : trip
-    );
-    setTrips(updatedTrips);
-    // Clear note after adding
-    setNote('');
-  };
 
   // Add a finish location to the current trip
   const finishTrip = () => {
     if (!currentTrip) return;
 
     const now = new Date();
-    const finishLocation: TripLocation = {
-      id: Date.now().toString(),
-      type: 'Finish',
-      leaveTime: formatDateTime(now),
-      location: 'End Location',
-      status: 'finish'
-    };
+    const finishLocation = `Finish Location at ${formatDateTime(now)}`;
 
-    const updatedLocations = [...currentTrip.locations, finishLocation];
     const updatedTrip = {
       ...currentTrip,
-      locations: updatedLocations,
-      receiverName: receiverName
+      locations: finishLocation, // Set locations as a string
+      receiverName: receiverName,
     };
 
     setCurrentTrip(updatedTrip);
+    setTrips(trips.map(trip => (trip.id === currentTrip.id ? updatedTrip : trip)));
 
-    // Update the trips array
-    const updatedTrips = trips.map(trip =>
-      trip.id === currentTrip.id ? updatedTrip : trip
-    );
-
-    setTrips(updatedTrips);
-    Navigation.navigate('FinishTrip')
+    navigation.navigate('FinishTrip'); // Corrected
   };
+  useEffect(() => {
+    const checkToken = async () => {
+      const token = await AsyncStorage.getItem("token");
+      setApikey(token);
+    };
+
+    checkToken();
+  }, []);
+
+  // Fetch dropdown lists
+  const { data, isLoading, isError } = useActivityDropDownListQuery({ apikey });
+  const { data: typeData, isLoading: typeLoading, isError: typeError } = useTypeDropDownListQuery({ apikey });
+  const acvityData = data?.data.activitylist || [];
+  const typeDataList = typeData?.data.loadtypes || [];
+  // console.log('typeDataList', typeDataList);
+
+
 
   // Handle form submission
-  const handleAddTrip = () => {
-    if (!consignee) {
-      Alert.alert('Error', 'Please enter a consignee location');
-      return;
+  const handleAddTrip = async () => {
+    
+    
+    const tripData = {
+      status: 200,
+      TripNumber: startedTrip?.TripNumber,
+      activities: [
+        {
+          activity,
+          location: consignee,
+          timestamp: deliveryTime,
+          quantity,
+          type,
+          partyname: receiverName,
+          notes: note,
+        },
+      ],
+    };
+
+    console.log('tripData', tripData);
+
+    try {
+      const response = await AddTripAcvity({ apikey, body: tripData }).unwrap();
+      console.log("API Response:", response);
+      setTripAcvitys(response?.data?.activities);
+      if(response?.data?.code === 'success'){
+        Alert.alert("Trip Added Successfully");
+      }
+    } catch (error) {
+      console.error("Error adding trip:", error);
     }
-
-    if (!currentTrip) {
-      createNewTrip();
-      return;
-    }
-
-    // Determine the next location type based on current trip
-    const locationCount = currentTrip.locations.filter(loc => loc.type.includes('Pickup') || loc.type.includes('Drop')).length;
-
-    if (activity.includes('Pickup')) {
-      addLocation(`Pickup ${locationCount + 1}`);
-    } else if (activity.includes('Delivery') || activity.includes('Dropoff')) {
-      addLocation(`Drop ${locationCount + 1}`);
-    } else {
-      addLocation(activity);
-    }
-
-    // Clear consignee for next entry
-    setConsignee('');
+    // try {
+    //   const response = await AddTripAcvity({ apikey, body: tripData }).unwrap();
+    //   console.log("API Response:", response);
+    // } catch (error) {
+    //   console.error("API Error:", error);
+    // }
+    
   };
+
 
   // Handle adding a note
   const handleAddNote = () => {
@@ -309,6 +273,10 @@ const AddTrip: React.FC = () => {
   };
 
   const timeOptions = generateTimeOptions();
+
+
+
+  console.log('tripAcvitys',tripAcvitys);
   return (
     <SafeAreaView style={tw`flex-1 bg-white`}>
       <StatusBar barStyle="light-content" />
@@ -339,7 +307,7 @@ const AddTrip: React.FC = () => {
               style={tw`flex-1 h-11 border border-gray-300 rounded px-2.5`}
               value={consignee}
               onChangeText={setConsignee}
-              placeholder="Enter location"
+              placeholder="Dropoff Location (Google)"
             />
           </View>
 
@@ -400,65 +368,31 @@ const AddTrip: React.FC = () => {
         </TouchableOpacity>
 
         {/* Trip Details Section */}
-        {currentTrip && (
-          <View>
-            <Text style={tw`text-center bg-[#f1f0f6] p-3 font-bold text-lg `}>Today's Trip Details</Text>
+        <View style={tw`p-4 bg-white`}>
+      <Text style={tw`text-lg font-bold mb-2`}>Today's Trip Details</Text>
+      
+      <FlatList
+        data={tripAcvitys}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={tw`p-4  `}>
+            <View style={tw`h-[100%] absolute right-2 bg-gray-300 w-[2px] mr-2`}>
 
-            <View style={tw`bg-[#ffffff]  p-4 pb-8`}>
-              {currentTrip.locations.map((location, index) => {
-                if (location.waiting) {
-                  return (
-                    <TripDetailItem
-                      key={location.id}
-                      type=""
-                      time={location.leaveTime}
-                      location=""
-                      waiting={true}
-                    />
-                  );
-                }
-
-                return (
-                  <React.Fragment key={location.id}>
-                    <TripDetailItem
-                      type={location.type}
-                      time={location.leaveTime}
-                      location={location.location}
-                      note={location.note}
-                      status={location.status}
-                    />
-
-                    {/* Add vertical line after each location except the last one */}
-                    {index < currentTrip.locations.length - 1 && location.type !== 'Finish' && !currentTrip.locations[index + 1].waiting && (
-                      <View style={tw`flex-row mb-2.5`}>
-                        <View style={tw`flex-1 pr-2.5`}>
-                          {location.type !== 'Start' && (
-                            <Text style={tw`text-sm text-gray-600 mb-0.5`}>
-                              Leave: {location.leaveTime}
-                            </Text>
-                          )}
-                        </View>
-                        <View style={tw`w-8 items-center`}>
-                          <View style={tw`w-0.5 h-10 bg-gray-300`} />
-                        </View>
-                      </View>
-                    )}
-                  </React.Fragment>
-                );
-              })}
             </View>
-
-            {/* Finish Trip Button */}
-            {currentTrip.locations.length > 1 && !currentTrip.locations.some(loc => loc.type === 'Finish') && (
-              <TouchableOpacity
-                style={tw`mx-4 my-4 bg-red-500 py-3 rounded-lg`}
-                onPress={finishTrip}
-              >
-                <Text style={tw`text-white text-center font-bold`}>Finish Trip</Text>
-              </TouchableOpacity>
-            )}
+            <View style={tw`flex-row items-center absolute -right-1 pr-2 -top-2 `}>
+              <FontAwesome name={item.activity === 'Pickup' ? 'circle' : 'circle'} style={tw`border border-gray-300 py-1 px-[5px] rounded-full`} size={18} color={item.activity === 'Pickup' ? 'blue' : 'green'} />
+            </View>
+              <Text style={tw` text-base font-semibold`}>{item.activity}</Text>
+            <Text style={tw`text-sm text-gray-600`}>Location: {item.location}</Text>
+            <Text style={tw`text-sm text-gray-600`}>Quantity: {item.qty} {item.Type}</Text>
+            {item.notes && <Text style={tw`text-sm text-gray-500 italic`}>Notes: {item.notes}</Text>}
           </View>
         )}
+      />
+    </View>
+
+        
+
       </ScrollView>
 
       {/* Activity Selection Modal */}
@@ -469,17 +403,17 @@ const AddTrip: React.FC = () => {
       >
         <View style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}>
           <View style={tw`bg-white rounded-lg w-80 p-4`}>
-            <Text style={tw`text-lg font-bold mb-4 text-center`}>Select Activity</Text>
-            {activityOptions.map((option) => (
+            {/* <Text style={tw`text-lg font-bold mb-4 text-center`}>Select Activity</Text> */}
+            {acvityData?.map((data) => (
               <TouchableOpacity
-                key={option}
+                key={data.item} // Using data.item as the key
                 style={tw`py-3 border-b border-gray-200`}
                 onPress={() => {
-                  setActivity(option);
+                  setActivity(data.item); // Ensure you're setting the correct value
                   setShowActivityModal(false);
                 }}
               >
-                <Text style={tw`text-center ${activity === option ? 'font-bold text-blue-500' : ''}`}>{option}</Text>
+                <Text style={tw`text-center ${activity === data.item ? 'font-bold text-blue-500' : ''}`}>{data.item}</Text>
               </TouchableOpacity>
             ))}
             <TouchableOpacity
@@ -490,7 +424,24 @@ const AddTrip: React.FC = () => {
             </TouchableOpacity>
           </View>
         </View>
+
       </Modal>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
       {/* Type Selection Modal */}
       <Modal
@@ -501,16 +452,16 @@ const AddTrip: React.FC = () => {
         <View style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}>
           <View style={tw`bg-white rounded-lg w-80 p-4`}>
             <Text style={tw`text-lg font-bold mb-4 text-center`}>Select Type</Text>
-            {typeOptions.map((option) => (
+            {typeDataList.map((option) => (
               <TouchableOpacity
-                key={option}
+                key={option.item}
                 style={tw`py-3 border-b border-gray-200`}
                 onPress={() => {
-                  setType(option);
+                  setType(option.item);
                   setShowTypeModal(false);
                 }}
               >
-                <Text style={tw`text-center ${type === option ? 'font-bold text-blue-500' : ''}`}>{option}</Text>
+                <Text style={tw`text-center ${type === option.item ? 'font-bold text-blue-500' : ''}`}>{option?.item}</Text>
               </TouchableOpacity>
             ))}
             <TouchableOpacity
