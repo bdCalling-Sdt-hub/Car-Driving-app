@@ -1,10 +1,18 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import tw from 'twrnc';
 import Header from './components/Header';
-import { useNavigation } from '@react-navigation/native';
+import FormSection from './components/FormSection';
+import { useActivityDropDownListQuery, useStartNewTripMutation, useTrucksandtailorsQuery } from './redux/features/tripApis/TripApi';
 import { Stack } from 'expo-router';
+
+// Define the navigation types
+type RootStackParamList = {
+  SignInPage: undefined;
+  AddTrip: undefined;
+};
 
 const currentDate = new Date();
 const formattedDate = currentDate.toLocaleDateString('en-US', {
@@ -15,124 +23,125 @@ const formattedDate = currentDate.toLocaleDateString('en-US', {
 });
 
 const DateSection = () => (
-  <View style={tw`flex-row justify-between p-3 font-bold text-lg bg-[#f1f0f6]`}>
+  <View style={tw`flex-row justify-between p-3 bg-[#f1f0f6]`}>
     <Text style={tw`text-lg font-bold text-gray-700`}>Start Your Day</Text>
     <Text style={tw`text-lg font-bold text-gray-700`}>{formattedDate}</Text>
   </View>
 );
 
-const FormSection = ({ formData, setFormData }) => (
-  <View style={tw`p-4`}>
-    <View style={tw`flex flex-row items-start justify-between gap-4`}>
-      <Text style={tw`text-gray-700 font-bold text-[14px] mb-1`}>Activity:</Text>
-      <View style={tw`font-bold text-lg border border-gray-300 rounded mb-3 w-[73%]`}>
-        <Picker
-          selectedValue={formData.activity}
-          onValueChange={(value) => setFormData({ ...formData, activity: value })}
-        >
-          <Picker.Item label="Dhaka" value="dhaka" />
-          <Picker.Item label="London" value="london" />
-          <Picker.Item label="UK" value="uk" />
-          <Picker.Item label="India" value="india" />
-        </Picker>
-      </View>
-    </View>
-
-    <View style={tw`flex flex-row items-start justify-between gap-4`}>
-      <Text style={tw`text-gray-700 font-bold text-[14px] mb-1`}>Location:</Text>
-      <TextInput
-        style={tw`font-bold text-lg border border-gray-300 p-3 rounded mb-3 w-[73%]`}
-        placeholder="Enter Your Location (Google)"
-        value={formData.location}
-        onChangeText={(text) => setFormData({ ...formData, location: text })}
-      />
-    </View>
-
-    <View style={tw`flex flex-row items-start justify-between gap-4`}>
-      <Text style={tw`text-gray-700 font-bold text-[14px] mb-1`}>Current Time:</Text>
-      <View style={tw`font-bold text-lg border border-gray-300 rounded mb-3 flex-1`}>
-        <Picker
-          selectedValue={formData.currentTime}
-          onValueChange={(value) => setFormData({ ...formData, currentTime: value })}
-        >
-          <Picker.Item label="By default Current Timestamp" value="" />
-        </Picker>
-      </View>
-    </View>
-
-    <View style={tw`flex flex-row items-start justify-between gap-4`}>
-      <Text style={tw`text-gray-700 font-bold text-[14px] mb-1`}>Choose:</Text>
-      <View style={tw`flex flex-row items-start justify-between gap-4 w-[73%]`}>
-        <View style={tw`font-bold text-lg border border-gray-300 rounded mb-3 flex-1`}>
-          <Picker
-            selectedValue={formData.tractor}
-            onValueChange={(value) => setFormData({ ...formData, tractor: value })}
-          >
-            <Picker.Item label="Tractor" value="tractor" />
-          </Picker>
-        </View>
-        <View style={tw`font-bold text-lg border border-gray-300 rounded mb-3 flex-1`}>
-          <Picker
-            selectedValue={formData.trailer}
-            onValueChange={(value) => setFormData({ ...formData, trailer: value })}
-          >
-            <Picker.Item label="Trailer" value="trailer" />
-          </Picker>
-        </View>
-      </View>
-    </View>
-
-    <View style={tw`flex flex-row items-start justify-between gap-4`}>
-      <Text style={tw`text-gray-700 font-bold text-[14px] mb-1`}>Odometer:</Text>
-      <TextInput
-        style={tw`font-bold text-lg border border-gray-300 p-3 rounded w-[73%]`}
-        placeholder="Enter Odometer Reading"
-        value={formData.odometer}
-        onChangeText={(text) => setFormData({ ...formData, odometer: text })}
-      />
-    </View>
-  </View>
-);
-
 const FinishTrip = () => {
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const [apikey, setApikey] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    activity: '',
-    location: '',
-    currentTime: '',
-    tractor: '',
-    trailer: '',
-    odometer: '',
+    activity: "",
+    location: "",
+    currentTime: "",
+    truck: "",
+    trailer: "",
+    odometer: "",
   });
 
-  const [loading, setLoading] = useState(false); // Add loading state
-  const navigation = useNavigation();
+  // Fetch stored API key
+  useEffect(() => {
+    const checkToken = async () => {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        navigation.navigate("SignInPage");
+      } else {
+        setApikey(token);
+      }
 
-  const handleSubmit = () => {
-    console.log(formData); // Log all form data
 
-    if (!formData) {
-      return Alert.alert('Please fill all the fields');
+    };
+    checkToken();
+  }, [navigation]);
+
+
+
+
+
+  // Fetch dropdown lists only when apikey is available
+  const { data, isLoading, isError } = useActivityDropDownListQuery(apikey ? { apikey } : {}, { skip: !apikey });
+  const { data: truckandTailordata, isLoading: truckLoading, isError: truckError } = useTrucksandtailorsQuery(apikey ? { apikey } : {}, { skip: !apikey });
+
+  const [startNewTrip] = useStartNewTripMutation();
+
+  const [tripNumber, setTripNumber] = useState(null);
+  useEffect(() => {
+    const fetchTripNumber = async () => {
+      try {
+        const storedTrip = await AsyncStorage.getItem('startedTrip');
+        if (storedTrip) {
+          const parsedTrip = JSON.parse(storedTrip);
+          setTripNumber(parsedTrip.TripNumber);
+        }
+      } catch (error) {
+        console.error('Error retrieving trip number:', error);
+      }
+    };
+    fetchTripNumber();
+  }, []);
+  // Handle form submission
+  const handleSubmit = async () => {
+    console.log("finish Form Data:", formData);
+
+    // Check if all required fields are filled
+    if (!formData.activity || !formData.location || !formData.currentTime || !formData.truck || !formData.trailer || !formData.odometer) {
+      return Alert.alert("Error", "Please fill all the fields");
     }
 
-    setLoading(true); // Start loading state
+    const tripData = {
+      status: 200,
+      TripNumber: tripNumber,
+      finish: [
+        {
+          timestamp: formData.currentTime,
+          location: formData.location,
+          odometer: formData.odometer,
+          truck: formData.truck,
+          trailer: formData.trailer,
+        },
+      ],
+    };
 
-    // Simulate a network request
-    setTimeout(() => {
-      setLoading(false); // Stop loading after 2 seconds
-      navigation.navigate('AddTrip', { ...formData }); // Pass data to AddTrip page
-    }, 2000);
+    try {
+      setLoading(true);
+      const response = await startNewTrip({ apikey, ...tripData }).unwrap();
+      console.log("Trip Response:", response);
+
+      if (response?.data?.code === 'invalid') {
+        Alert.alert("Login Error", "Invalid email or password.");
+      } else if (response?.data?.code === 'success') {
+        await AsyncStorage.setItem("startedTrip", JSON.stringify(response?.data));
+        Alert.alert("Success", "Trip finished successfully!");
+        navigation.navigate("AddTrip");
+      } else {
+        Alert.alert("Error", "Unexpected response from the server.");
+      }
+    } catch (error) {
+      console.error("Error finish trip:", error);
+      Alert.alert("Error", "Failed to start trip. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <View style={tw`flex-1 bg-white`}>
-        <Stack.Screen name="Home"  options={{ headerShown: false }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <Header />
       <DateSection />
-      <FormSection formData={formData} setFormData={setFormData} />
+      <FormSection
+        formData={formData}
+        setFormData={setFormData}
+        activityList={data?.data?.activitylist || []}
+        trucklistandtailorlist={truckandTailordata?.data || []}
+      />
 
       <View style={tw`flex flex-row items-center justify-end px-4`}>
         <TouchableOpacity
-          style={tw`bg-red-500 w-full p-3 mb-4 rounded `}
+          style={tw`bg-red-500 p-3 mb-4 rounded w-full`}
           onPress={handleSubmit}
         >
           <Text style={tw`text-white text-center font-bold text-lg`}>Finish Trip</Text>
@@ -146,6 +155,7 @@ const FinishTrip = () => {
         </View>
       )}
 
+    
     
     </View>
   );

@@ -19,7 +19,8 @@ import Header from './components/Header';
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from './components/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useActivityDropDownListQuery, useAddTripAcvityMutation, useTypeDropDownListQuery } from './redux/features/tripApis/TripApi';
+import { useActivityDropDownListQuery, useAddTripAcvityMutation, useOneTripAcvityMutation, useTypeDropDownListQuery } from './redux/features/tripApis/TripApi';
+import { format } from "date-fns";
 // Define TypeScript interfaces
 interface TripDetailItemProps {
   type: string;
@@ -103,6 +104,8 @@ const AddTrip: React.FC<AddTripProps> = () => {
   const [note, setNote] = useState<string>('');
   const [startedTrip, setStartedTrip] = useState(null);
   const [AddTripAcvity] = useAddTripAcvityMutation();
+  const [OneTripAcvity] = useOneTripAcvityMutation();
+  const [tripdetails, setTripdetails] = useState(null);
   const [apikey, setApikey] = useState<string>('');
   const Navigation = useNavigation();
 
@@ -126,20 +129,20 @@ const AddTrip: React.FC<AddTripProps> = () => {
     };
 
     getTrips();
-  }, [ Navigation ]);
+  }, [Navigation]);
 
 
   console.log('startedTrip-----------', startedTrip);
 
   const [trips, setTrips] = useState<Trip[]>([]);
-  const [currentTrip, setCurrentTrip] = useState<Trip | null>(null);
+
 
   // Modal states
   const [showActivityModal, setShowActivityModal] = useState<boolean>(false);
   const [showTypeModal, setShowTypeModal] = useState<boolean>(false);
   const [showTimeModal, setShowTimeModal] = useState<boolean>(false);
   const [showAddNoteModal, setShowAddNoteModal] = useState<boolean>(false);
-
+  const [hasFetched, setHasFetched] = useState(false);
   // Get current date in the format "Wed Jan 29 2025"
   const getCurrentDate = (): string => {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -180,21 +183,10 @@ const AddTrip: React.FC<AddTripProps> = () => {
 
   // Add a finish location to the current trip
   const finishTrip = () => {
-    if (!currentTrip) return;
 
-    const now = new Date();
-    const finishLocation = `Finish Location at ${formatDateTime(now)}`;
 
-    const updatedTrip = {
-      ...currentTrip,
-      locations: finishLocation, // Set locations as a string
-      receiverName: receiverName,
-    };
 
-    setCurrentTrip(updatedTrip);
-    setTrips(trips.map(trip => (trip.id === currentTrip.id ? updatedTrip : trip)));
-
-    navigation.navigate('FinishTrip'); // Corrected
+    Navigation.navigate('FinishTrip');
   };
   useEffect(() => {
     const checkToken = async () => {
@@ -216,8 +208,8 @@ const AddTrip: React.FC<AddTripProps> = () => {
 
   // Handle form submission
   const handleAddTrip = async () => {
-    
-    
+
+
     const tripData = {
       status: 200,
       TripNumber: startedTrip?.TripNumber,
@@ -239,8 +231,8 @@ const AddTrip: React.FC<AddTripProps> = () => {
     try {
       const response = await AddTripAcvity({ apikey, body: tripData }).unwrap();
       console.log("API Response:", response);
-      setTripAcvitys(response?.data?.activities);
-      if(response?.data?.code === 'success'){
+      setTripAcvitys(response?.data);
+      if (response?.data?.code === 'success') {
         Alert.alert("Trip Added Successfully");
       }
     } catch (error) {
@@ -252,7 +244,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
     // } catch (error) {
     //   console.error("API Error:", error);
     // }
-    
+
   };
 
 
@@ -276,7 +268,31 @@ const AddTrip: React.FC<AddTripProps> = () => {
 
 
 
-  console.log('tripAcvitys',tripAcvitys);
+  useEffect(() => {
+    const fetchTripData = async () => {
+      const tripData = {
+        status: 200,
+        TripNumber: startedTrip?.TripNumber,
+      };
+  
+      try {
+        const response = await OneTripAcvity({ apikey, body: tripData }).unwrap();
+        if (response?.data) {
+          setTripdetails(response.data);
+        }
+      } catch (error) {
+        console.error("Error fetching trip:", error);
+      }
+    };
+  
+    if (finishTrip && !hasFetched && startedTrip?.TripNumber && apikey) {
+      fetchTripData();
+      setHasFetched(true);  // Mark as fetched to avoid the loop
+    }
+  },[finishTrip, startedTrip?.TripNumber, apikey]); 
+  
+
+  console.log('tripdetails', tripdetails);
   return (
     <SafeAreaView style={tw`flex-1 bg-white`}>
       <StatusBar barStyle="light-content" />
@@ -361,7 +377,8 @@ const AddTrip: React.FC<AddTripProps> = () => {
 
         {/* Add Trip Button */}
         <TouchableOpacity
-          style={tw`mx-2 mb-4 bg-[#29adf8] py-2 rounded-sm`}
+         disabled={!!tripdetails?.finish}
+          style={tw`mx-2 mb-4 ${tripdetails?.finish ? 'bg-gray-400' : 'bg-[#29adf8]'} py-2 rounded-sm`}
           onPress={handleAddTrip}
         >
           <Text style={tw`text-white text-lg text-center font-bold`}>Add Trip</Text>
@@ -369,29 +386,111 @@ const AddTrip: React.FC<AddTripProps> = () => {
 
         {/* Trip Details Section */}
         <View style={tw`p-4 bg-white`}>
-      <Text style={tw`text-lg font-bold mb-2`}>Today's Trip Details</Text>
-      
-      <FlatList
-        data={tripAcvitys}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={tw`p-4  `}>
-            <View style={tw`h-[100%] absolute right-2 bg-gray-300 w-[2px] mr-2`}>
+          <Text style={tw`text-lg font-bold mb-2`}>Today's Trip Details</Text>
 
+          <View style={tw`p-4`}>
+            <View style={tw`h-[100%] absolute right-2 bg-gray-300 w-[2px] mr-2`} />
+
+
+
+            <View style={tw`flex-row items-center absolute -right-1 pr-2 -top-2`}>
+              <FontAwesome
+                name="circle"
+                style={tw`border border-gray-300 py-1 px-[5px] rounded-full`}
+                size={18}
+                color={"green"}
+              />
             </View>
-            <View style={tw`flex-row items-center absolute -right-1 pr-2 -top-2 `}>
-              <FontAwesome name={item.activity === 'Pickup' ? 'circle' : 'circle'} style={tw`border border-gray-300 py-1 px-[5px] rounded-full`} size={18} color={item.activity === 'Pickup' ? 'blue' : 'green'} />
-            </View>
-              <Text style={tw` text-base font-semibold`}>{item.activity}</Text>
-            <Text style={tw`text-sm text-gray-600`}>Location: {item.location}</Text>
-            <Text style={tw`text-sm text-gray-600`}>Quantity: {item.qty} {item.Type}</Text>
-            {item.notes && <Text style={tw`text-sm text-gray-500 italic`}>Notes: {item.notes}</Text>}
+
+
+            <Text style={tw`text-base font-semibold`}>Start</Text>
+
+
+            <Text style={tw`text-xs text-gray-500`}>start time: {startedTrip?.start?.timestamp}</Text>
+            <Text style={tw`text-xs text-gray-500`}>End Time: {startedTrip?.start?.maxactivitytimelimit}</Text>
+            <Text style={tw`text-sm text-gray-600`}>Location: {startedTrip?.start?.location}</Text>
+
           </View>
-        )}
-      />
-    </View>
 
-        
+          <FlatList
+            data={tripAcvitys?.activities}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => {
+
+              const formattedTime = item.timestamp
+                ? format(new Date(item.timestamp), "dd MMM yyyy, hh:mm a")
+                : "N/A";
+
+              return (
+                <View style={tw`p-4`}>
+                  <View style={tw`h-[100%] absolute right-2 bg-gray-300 w-[2px] mr-2`} />
+
+                  <View style={tw`flex-row items-center absolute -right-1 pr-2 -top-2`}>
+                    <FontAwesome
+                      name="circle"
+                      style={tw`border border-gray-300 py-1 px-[5px] rounded-full`}
+                      size={18}
+                      color={item.activity === "Pickup" ? "blue" : "green"}
+                    />
+                  </View>
+
+                  {/* Activity Name */}
+                  <Text style={tw`text-base font-semibold`}>{item.activity}</Text>
+
+                  {/* Formatted Timestamp */}
+                  <Text style={tw`text-xs text-gray-500`}>{formattedTime}</Text>
+
+                  {/* Other Details */}
+                  <Text style={tw`text-sm text-gray-600`}>Location: {item.location}</Text>
+                  <Text style={tw`text-sm text-gray-600`}>Quantity: {item.qty} {item.Type}</Text>
+
+                  {item.notes && (
+                    <Text style={tw`text-sm text-gray-500 italic`}>Notes: {item.notes}</Text>
+                  )}
+                </View>
+              );
+            }}
+          />
+
+          {
+            tripdetails?.finish && (
+              <View style={tw`p-4`}>
+                <View style={tw`h-[100%] absolute right-2 bg-gray-300 w-[2px] mr-2`} />
+
+                <View style={tw`flex-row items-center absolute -right-1 pr-2 -top-2`}>
+                  <FontAwesome
+                    name="circle"
+                    style={tw`border border-gray-300 py-1 px-[5px] rounded-full`}
+                    size={18}
+                    color={"red"}
+                  />
+                </View>
+
+                {/* Activity Name */}
+                <Text style={tw`text-base font-semibold text-[#ff0000]`}>Finish</Text>
+
+                {/* Formatted Timestamp */}
+                <Text style={tw`text-xs text-gray-500`}>finish time: {tripdetails?.finish?.timestamp}</Text>
+
+                {/* Other Details */}
+                <Text style={tw`text-sm text-gray-600`}>Location: {tripdetails?.finish?.location}</Text>
+              </View>
+            )
+          }
+
+          <TouchableOpacity
+            disabled={!!tripdetails?.finish} // Convert to boolean
+            style={tw`mx-2 mb-4 mt-20 py-2 rounded-sm ${tripdetails?.finish ? "bg-gray-400" : "bg-red-500"
+              }`}
+            onPress={finishTrip}
+          >
+            <Text style={tw`text-white text-lg text-center font-bold`}>Finish Trip</Text>
+          </TouchableOpacity>
+
+
+        </View>
+
+
 
       </ScrollView>
 

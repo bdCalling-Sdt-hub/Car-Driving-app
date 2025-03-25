@@ -1,39 +1,70 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
 import tw from "twrnc";
 import { Ionicons } from "@expo/vector-icons";
 import Header from "./components/Header";
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useUpatePasswordMutation } from "./redux/features/users/UserApi";
+import { useNavigation } from "expo-router";
+
 // Create New Password screen component
 const CreateNewPassword: React.FC = () => {
-  const [newPassword, setNewPassword] = useState<string>("");
-  const [confirmPassword, setConfirmPassword] = useState<string>("");
-  const [passwordVisible, setPasswordVisible] = useState<boolean>(false);
-  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState<boolean>(false);
+  const [code, setCode] = useState<string>(""); // Code input state
+  const [newPassword, setNewPassword] = useState<string>(""); // New password input state
+  const [passwordVisible, setPasswordVisible] = useState<boolean>(false); // For toggling password visibility
 
-  // Function to validate the form
-  const validateForm = (): boolean => {
-    if (!newPassword || !confirmPassword) {
+  const [updatePassword, { isLoading, error }] = useUpatePasswordMutation(); // Use the updatePassword mutation hook
+
+
+const navigation = useNavigation();
+
+  const [apikey, setApikey] = useState("");
+
+  useEffect(() => {
+    const checkToken = async () => {  
+      const token = await AsyncStorage.getItem("token");
+      setApikey(token);
+    };
+    checkToken();
+  }, []);
+
+
+
+  // Function to handle password saving and API call
+  const handleSavePassword = async () => {
+    if (!code || !newPassword) {
       Alert.alert("Validation Error", "Both fields are required.");
-      return false;
+      return;
     }
-    if (newPassword !== confirmPassword) {
-      Alert.alert("Validation Error", "Passwords do not match.");
-      return false;
+  
+  
+  
+    const data = {
+      code: code,
+      password: newPassword,
+    };
+  
+    try {
+      // Trigger the updatePassword mutation API call
+      const response = await updatePassword({ apikey, ...data }).unwrap();
+      console.log("Update Password Response:", response);
+  
+      // Extract response data properly
+      const { code, error } = response?.data || {};
+  
+      if (code === "Failure") {
+        Alert.alert("Error", error || "Invalid code.");
+      } else if (code === "Success") {
+        Alert.alert("Success", error || "Password Updated Successfully");
+        navigation.navigate("HomeScreen");
+      }
+    } catch (err) {
+      console.error("Update Password Error:", err);
+      Alert.alert("Error", "Something went wrong. Please try again.");
     }
-    if (newPassword.length < 6) {
-      Alert.alert("Validation Error", "Password must be at least 6 characters long.");
-      return false;
-    }
-    return true;
   };
-
-  const handleSavePassword = () => {
-    if (validateForm()) {
-      // Handle password saving logic here (e.g., API call)
-      Alert.alert("Success", "Password has been successfully changed.");
-    }
-  };
+  
 
   return (
     <View>
@@ -43,6 +74,17 @@ const CreateNewPassword: React.FC = () => {
         <Text style={tw`text-gray-500 text-sm font-medium mt-2 mb-6`}>
           Please create a new password for your account.
         </Text>
+
+        {/* Code Input */}
+        <View style={tw`flex-row items-center border border-gray-300 rounded-lg p-1 mb-4`}>
+          <TextInput
+            style={tw`flex-1 text-[16px] px-2 font-bold text-gray-600`}
+            placeholder="Enter Code"
+            value={code}
+            onChangeText={setCode}
+            keyboardType="numeric"
+          />
+        </View>
 
         {/* New Password Input */}
         <View style={tw`flex-row items-center border border-gray-300 rounded-lg p-1 mb-4`}>
@@ -58,27 +100,20 @@ const CreateNewPassword: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Confirm Password Input */}
-        <View style={tw`flex-row items-center border border-gray-300 rounded-lg p-1 mb-6`}>
-          <TextInput
-            style={tw`flex-1 text-[16px] px-2 font-bold text-gray-600`}
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry={!confirmPasswordVisible}
-          />
-          <TouchableOpacity style={tw`px-2`} onPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}>
-            <Ionicons name={confirmPasswordVisible ? "eye" : "eye-off"} size={24} color="gray" />
-          </TouchableOpacity>
-        </View>
-
         {/* Save Password Button */}
         <TouchableOpacity
           onPress={handleSavePassword}
           style={tw`bg-[#29adf8] w-[70%] mx-auto py-3 shadow-lg rounded-lg items-center`}
         >
-          <Text style={tw`text-white text-lg font-bold`}>Save Password</Text>
+          <Text style={tw`text-white text-lg font-bold`}>
+            {isLoading ? "Saving..." : "Save Password"}
+          </Text>
         </TouchableOpacity>
+
+        {/* Error Handling */}
+        {error && (
+          <Text style={tw`text-red-500 mt-4 text-center`}>{error.message}</Text>
+        )}
       </View>
     </View>
   );

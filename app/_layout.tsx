@@ -7,9 +7,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { DrawerActions, useNavigation } from "@react-navigation/native";
 import { Provider } from "react-redux";
 import store from "./redux/store";
-import { useAuthenticateUserQuery } from "./redux/features/users/UserApi";
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
+import { useAuthuserMutation } from "./redux/features/users/UserApi";
 
 const CustomSidebar = () => {
   const navigation = useNavigation();
@@ -29,27 +30,32 @@ const CustomSidebar = () => {
   }, []);
 
   // Only run the query if the apikey is available and user clicked Change Password
-  const { data, error, isLoading: queryLoading, refetch } = useAuthenticateUserQuery({ apikey }, { skip: isLoading || !apikey });
+  const [authenticateUser, { isLoading: authLoading, isError, error }] = useAuthuserMutation();;
 
-  useEffect(() => {
-    if (data) {
-      console.log('Authenticated user data:', data);
-    }
-    if (error) {
-      console.error('Error fetching user data:', error);
-    }
-  }, [data, error]);
+ 
 
-  const handleChangePassword = () => {
-    if (apikey) {
-      refetch(); // Trigger the API call when the user clicks to change password
-      Alert.alert("Change Password", "You can change your password here.");
-    } else {
-      Alert.alert("Error", "API key not found. Please login again.");
+  const handleChangePassword = async () => {
+    if (!apikey) {
+      Alert.alert("No API key found", "Please log in again.");
+      return;
+    }
+
+    try {
+      const response = await authenticateUser({ apikey }).unwrap();  // Call mutation with apikey
+      if (response?.data) {
+        console.log("Authentication successful:", response);
+        Alert.alert("Success", "A 6 digit Authentication Code is Sent to your email.");
+        navigation.navigate("CreateNewPassword");
+      } else {
+        console.log("Authentication failed:", response?.error);
+        Alert.alert("Error", "Failed to authenticate user");
+      }
+    } catch (error) {
+      console.error("Error during authentication:", error);
+      Alert.alert("Error", "An error occurred while changing password.");
     }
   };
-
-  if (isLoading || queryLoading) {
+  if (isLoading || authLoading) {
     return (
       <View style={tw`flex-1 justify-center items-center`}>
         <Text>Loading...</Text>

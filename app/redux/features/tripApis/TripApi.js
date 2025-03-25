@@ -7,6 +7,7 @@ const TripApi = api.injectEndpoints({
         url: `/tripactivitydropdown.php?apikey=${apikey}`,
         method: "GET",
       }),
+      providesTags: ["trip"],
     }),
     TypeDropDownList: builder.query({
       query: ({ apikey }) => ({
@@ -29,13 +30,21 @@ const TripApi = api.injectEndpoints({
 
     startNewTrip: builder.mutation({
       query: ({ apikey, ...body }) => ({
-        url: `/trip.php?apikey=${apikey}`,  // ✅ Pass API key in the URL
+        url: `/trip.php?apikey=${apikey}`,  
         method: "POST",
-        body,  // ✅ Send the rest of the trip data as the body
+        body, 
       }),
+      providesTags: ["trip"],
     }),
-    
-    
+
+    OneTripAcvity: builder.mutation({
+      query: ({apikey,body}) => ({
+        url: `/trip.php?apikey=${apikey}`,
+        method: "POST",
+        body,
+      }),
+      providesTags: ["trip"],
+    }),
 
     AddTripAcvity: builder.mutation({
       query: ({apikey,body}) => ({
@@ -43,18 +52,17 @@ const TripApi = api.injectEndpoints({
         method: "POST",
         body,
       }),
+      providesTags: ["trip"],
     }),
-
-    FinishTrip : builder.mutation({
-      query: (body) => ({
+    FinishTrip: builder.mutation({
+      query: ({ apikey, ...body }) => ({
         url: `/trip.php?apikey=${apikey}`,
         method: "POST",
         body,
       }),
+      invalidatesTags: ["trip"],
     }),
-
-
-
+    
 
 
 
@@ -73,5 +81,5 @@ const TripApi = api.injectEndpoints({
   }),
 });
 
-export const { useActivityDropDownListQuery, useTrucksandtailorsQuery, useStartNewTripMutation, useAddTripAcvityMutation, useFinishTripMutation, useHeaderLogoQuery ,useTypeDropDownListQuery } = TripApi;
+export const { useActivityDropDownListQuery, useTrucksandtailorsQuery, useStartNewTripMutation, useAddTripAcvityMutation, useFinishTripMutation, useHeaderLogoQuery ,useTypeDropDownListQuery, useOneTripAcvityMutation } = TripApi;
 export default TripApi;

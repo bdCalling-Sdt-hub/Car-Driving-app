@@ -8,7 +8,7 @@ const FormSection = ({
   formData,
   setFormData,
   activityList,
-  trucklistandtailorlist,
+  trucklistandtailorlist = [],
 }) => {
   const timeOptions = [
     "12:00 AM",
@@ -63,13 +63,13 @@ const FormSection = ({
 
   return (
     <View style={tw`p-4`}>
-      <View style={tw`p-4`}>
+      <View style={tw``}>
         <View style={tw`flex flex-row items-start justify-between gap-4`}>
           <Text style={tw`text-gray-700 font-bold text-[14px] mb-1`}>
             Activity:
           </Text>
           <View
-            style={tw`font-bold text-lg border border-gray-300 rounded mb-3 w-[73%]`}
+            style={tw`font-bold text-lg border border-gray-300 rounded mb-3 w-[70%]`}
           >
             <Picker
               selectedValue={formData.activity}
@@ -90,7 +90,7 @@ const FormSection = ({
           Location:
         </Text>
         <TextInput
-          style={tw`font-bold text-lg border border-gray-300 h-[54px] rounded mb-3 w-[73%]`}
+          style={tw`font-bold text-[14px] border border-gray-300 h-[54px] rounded mb-3 w-[70%]`}
           placeholder="Enter Your Location (Google)"
           value={formData.location}
           onChangeText={(text) => setFormData({ ...formData, location: text })}
@@ -101,7 +101,7 @@ const FormSection = ({
         <Text style={tw`text-gray-700 font-bold text-[14px] mb-1`}>
           Current Time:
         </Text>
-        <View style={tw`flex-1 border border-gray-300 rounded mb-3`}>
+        <View style={tw`flex-1 border border-gray-300 rounded mb-3 w-[70%]`}>
           <Picker
             mode="dialog"
             selectedValue={formData.currentTime}
@@ -122,7 +122,7 @@ const FormSection = ({
           Choose:
         </Text>
         <View
-          style={tw`flex flex-row items-start justify-between gap-4 w-[73%]`}
+          style={tw`flex flex-row items-start justify-between gap-4 w-[70%]`}
         >
           <View
             style={tw`font-bold text-lg border border-gray-300 rounded mb-3 flex-1`}
@@ -171,7 +171,7 @@ const FormSection = ({
           Odometer:
         </Text>
         <TextInput
-          style={tw`font-bold text-lg border border-gray-300 p-3 rounded w-[73%]`}
+          style={tw`font-bold text-lg border border-gray-300 p-3 rounded w-[70%]`}
           placeholder="Enter Odometer Reading"
           value={formData.odometer}
           onChangeText={(text) => setFormData({ ...formData, odometer: text })}

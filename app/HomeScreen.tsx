@@ -1,13 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import tw from 'twrnc';
 import Header from './components/Header';
-import { NavigationProp, useNavigation } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import AsyncStorage, { useAsyncStorage } from '@react-native-async-storage/async-storage';
-import { useActivityDropDownListQuery, useStartNewTripMutation, useTrucksandtailorsQuery } from './redux/features/tripApis/TripApi';
 import FormSection from './components/FormSection';
+import { useActivityDropDownListQuery, useStartNewTripMutation, useTrucksandtailorsQuery } from './redux/features/tripApis/TripApi';
+import { Stack } from 'expo-router';
+
+// Define the navigation types
+type RootStackParamList = {
+  SignInPage: undefined;
+  AddTrip: undefined;
+};
 
 const currentDate = new Date();
 const formattedDate = currentDate.toLocaleDateString('en-US', {
@@ -17,20 +22,16 @@ const formattedDate = currentDate.toLocaleDateString('en-US', {
   day: 'numeric', // '29'
 });
 
-
 const DateSection = () => (
-  <View style={tw`flex-row justify-between p-3 font-bold text-lg bg-[#f1f0f6]`}>
+  <View style={tw`flex-row justify-between p-3 bg-[#f1f0f6]`}>
     <Text style={tw`text-lg font-bold text-gray-700`}>Start Your Day</Text>
     <Text style={tw`text-lg font-bold text-gray-700`}>{formattedDate}</Text>
   </View>
 );
 
-
-
 const HomeScreen = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-
-  const [apikey, setApikey] = useState("");
+  const [apikey, setApikey] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     activity: "",
@@ -51,13 +52,12 @@ const HomeScreen = () => {
         setApikey(token);
       }
     };
-
     checkToken();
-  }, []);
+  }, [navigation]);
 
-  // Fetch dropdown lists
-  const { data, isLoading, isError } = useActivityDropDownListQuery({ apikey });
-  const { data: truckandTailordata, isLoading: truckLoading, isError: truckError } = useTrucksandtailorsQuery({ apikey });
+  // Fetch dropdown lists only when apikey is available
+  const { data, isLoading, isError } = useActivityDropDownListQuery(apikey ? { apikey } : {}, { skip: !apikey });
+  const { data: truckandTailordata, isLoading: truckLoading, isError: truckError } = useTrucksandtailorsQuery(apikey ? { apikey } : {}, { skip: !apikey });
 
   const [startNewTrip] = useStartNewTripMutation();
 
@@ -70,7 +70,7 @@ const HomeScreen = () => {
       return Alert.alert("Error", "Please fill all the fields");
     }
 
-    const tripData = { 
+    const tripData = {
       status: 200,
       start: [
         {
@@ -79,7 +79,6 @@ const HomeScreen = () => {
           odometer: formData.odometer,
           truck: formData.truck,
           trailer: formData.trailer,
-          // notes: "Trip started via mobile app.",
         },
       ],
     };
@@ -88,18 +87,16 @@ const HomeScreen = () => {
       setLoading(true);
       const response = await startNewTrip({ apikey, ...tripData }).unwrap();
       console.log("Trip Response:", response);
-      // const data = response?.data;
-      if(response?.data?.code === 'invalid'){
-        Alert.alert("Login Error", "Invalid email or password.");
-      }
-      if(response?.data?.code === 'success'){
-        AsyncStorage.setItem("startedTrip", JSON.stringify(response?.data));
-        Alert.alert("Success", "Trip started successfully!");
 
+      if (response?.data?.code === 'invalid') {
+        Alert.alert("Login Error", "Invalid email or password.");
+      } else if (response?.data?.code === 'success') {
+        await AsyncStorage.setItem("startedTrip", JSON.stringify(response?.data));
+        Alert.alert("Success", "Trip started successfully!");
         navigation.navigate("AddTrip");
+      } else {
+        Alert.alert("Error", "Unexpected response from the server.");
       }
- 
-      // navigation.navigate("AddTrip", { ...formData });
     } catch (error) {
       console.error("Error starting trip:", error);
       Alert.alert("Error", "Failed to start trip. Please try again.");
@@ -110,11 +107,15 @@ const HomeScreen = () => {
 
   return (
     <View style={tw`flex-1 bg-white`}>
-      <Stack.Screen name="Home" options={{ headerShown: false }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <Header />
       <DateSection />
-      <FormSection formData={formData} setFormData={setFormData} activityList={data?.data?.activitylist || [] } trucklistandtailorlist={truckandTailordata?.data || []} />
-
+      <FormSection
+        formData={formData}
+        setFormData={setFormData}
+        activityList={data?.data?.activitylist || []}
+        trucklistandtailorlist={truckandTailordata?.data || []}
+      />
 
       <View style={tw`flex flex-row items-center justify-end px-4`}>
         <TouchableOpacity
@@ -132,11 +133,9 @@ const HomeScreen = () => {
         </View>
       )}
 
-      <Text style={tw`text-center bg-[#f1f0f6] p-3 font-bold text-lg`}>Today's Trip Details</Text>
-      {/* <Text style={tw`text-center bg-[#f1f0f6] p-3 font-bold text-lg`}>{apikey}</Text> */}
-
-
-
+      <Text style={tw`text-center bg-[#f1f0f6] p-3 font-bold text-lg`}>
+        Today's Trip Details
+      </Text>
     </View>
   );
 };

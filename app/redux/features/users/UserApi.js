@@ -23,15 +23,27 @@ const userApi = api.injectEndpoints({
         invalidatesTags: ["user"],
       }),
 
-    authenticateUser: builder.query({
-      query: ({ apikey}) => ({
-        url: `/validate_user.php?apikey=${apikey}`,
-        method: "GET",
+      authuser: builder.mutation({
+        query: ({ apikey }) => ({
+          url: `/validate_user.php?apikey=${apikey}`,
+          method: 'POST',  
+        }),
       }),
-    }),
+
+      upatePassword : builder.mutation({
+        query: ({ apikey, ...body }) => ({
+          url: `/update_password.php?apikey=${apikey}`,
+          method: "POST",
+          body,
+        }),
+        invalidatesTags: ["user"],
+      }),
+      
+
+    
       
   }),
 });
 
-export const { useRegisterUserMutation, useLoginUserMutation, useAuthenticateUserQuery } = userApi;
-export default userApi; // ✅ Add default export
+export const { useRegisterUserMutation, useLoginUserMutation, useAuthuserMutation, useUpatePasswordMutation } = userApi;
+export default userApi; 
