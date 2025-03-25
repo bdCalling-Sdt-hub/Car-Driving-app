@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useLoginUserMutation } from "../app/redux/features/users/UserApi"; // Correct import
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Stack } from "expo-router";
 
 // Type for navigation
 type RootStackParamList = {
@@ -34,27 +35,28 @@ const SignInPage: React.FC = () => {
   }, [navigation]);
 
 
- 
+
   const handleSignIn = async () => {
     console.log("Sign In Button Pressed", email, password);
-   
-      const response = await loginUser({ email, password }).unwrap();
-      console.log("Login Success:", response);
 
-      if(response?.data?.code === 'invalid'){
-        Alert.alert("Login Error", "Invalid email or password.");
-      }
-  
-      // Check if response contains 'user' or any necessary data
-      if (response?.data?.apikey) {
-       AsyncStorage.setItem("token", response?.data?.apikey);
-        alert("Sign In Success");
-        navigation.navigate("HomeScreen");
-      } 
-    
+    const response = await loginUser({ email, password }).unwrap();
+    console.log("Login Success:", response);
+
+    if (response?.data?.code === 'invalid') {
+      Alert.alert("Login Error", "Invalid email or password.");
+    }
+
+    // Check if response contains 'user' or any necessary data
+    if (response?.data?.apikey) {
+      AsyncStorage.setItem("token", response?.data?.apikey);
+      alert("Sign In Success");
+      navigation.navigate("HomeScreen");
+    }
+
   };
   return (
-    <View style={tw`bg-white`}>
+    <View style={tw`bg-white h-full `}>
+      <Stack.Screen name="SignInPage" options={{ headerShown: false }} />
       <Text style={tw`text-2xl font-semibold`}>Sign In </Text>
       <Text style={tw`text-gray-500 text-sm font-medium mt-2 mb-6`}>
         Welcome back! Please enter your credentials.
@@ -85,9 +87,10 @@ const SignInPage: React.FC = () => {
         <Text style={tw`text-white text-lg font-bold`}> {
           isLoading ? <View style={tw`flex flex-row items-center gap-2`}><Ionicons name="refresh" size={24} color="white" /> <Text style={tw`text-[16px] text-white font-bold`}>Loading</Text></View> : "Sign In"
         } </Text>
-       
-    
+
+
       </TouchableOpacity>
+      
     </View>
   );
 };

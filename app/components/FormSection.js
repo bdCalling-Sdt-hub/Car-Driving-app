@@ -101,7 +101,7 @@ const FormSection = ({
         <Text style={tw`text-gray-700 font-bold text-[14px] mb-1`}>
           Current Time:
         </Text>
-        <View style={tw`flex-1 border border-gray-300 rounded mb-3 w-[70%]`}>
+        <View style={tw`flex-1 border border-gray-300 rounded mb-3 max-w-[70%]`}>
           <Picker
             mode="dialog"
             selectedValue={formData.currentTime}

@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useRegisterUserMutation } from "./redux/features/users/UserApi";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Stack } from "expo-router";
 
 // Type for navigation
 type RootStackParamList = {
@@ -84,7 +85,8 @@ const SignUpPage: React.FC = () => {
   };
 
   return (
-    <View style={tw`bg-white `}>
+    <View style={tw`bg-white h-full  `}>
+       <Stack.Screen name="SignUpPage" options={{ headerShown: false }} />
       <Text style={tw`text-2xl font-semibold`}>Create Account</Text>
       <Text style={tw`text-gray-500 text-sm font-medium mt-2 mb-6`}>
         Let's get started by filling out the form below.

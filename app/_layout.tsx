@@ -55,6 +55,44 @@ const CustomSidebar = () => {
       Alert.alert("Error", "An error occurred while changing password.");
     }
   };
+
+
+  const handleLogout = async () => {
+    Alert.alert(
+      "Logout Confirmation", 
+      "Are you sure you want to log out?", 
+      [
+        {
+          text: "Cancel",
+          onPress: () => console.log("Logout Cancelled"),
+          style: "cancel"
+        },
+        {
+          text: "Logout",
+          onPress: async () => {
+            try {
+              // Clear the token from AsyncStorage
+              await AsyncStorage.removeItem("token");
+              
+              // Clear any other relevant data (e.g., user data, session info)
+              await AsyncStorage.removeItem("startedTrip"); // Optional: Clear any other stored data
+  
+              // Redirect to SignIn page
+              navigation.navigate("index");
+              console.log("User logged out successfully.");
+            } catch (error) {
+              console.error("Error during logout:", error);
+              Alert.alert("Error", "An error occurred during logout. Please try again.");
+            }
+          }
+        }
+      ],
+      { cancelable: false }
+    );
+  };
+
+
+
   if (isLoading || authLoading) {
     return (
       <View style={tw`flex-1 justify-center items-center`}>
@@ -111,10 +149,7 @@ const CustomSidebar = () => {
       
       <TouchableOpacity
         style={tw`p-4`}
-        onPress={() => {
-          // Handle sign out logic
-          console.log('Sign out logic');
-        }}
+        onPress={handleLogout}
       >
         <Text style={tw`text-white text-2xl font-semibold`}>Sign Out</Text>
       </TouchableOpacity>
