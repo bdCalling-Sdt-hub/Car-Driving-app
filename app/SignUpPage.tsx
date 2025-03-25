@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Image, Alert } from "react-native";
 import tw from "twrnc";
 import { Ionicons } from "@expo/vector-icons";
@@ -21,6 +21,17 @@ const SignUpPage: React.FC = () => {
 
   // Using the register mutation hook
   const [registerUser, { isLoading, isError, error, data }] = useRegisterUserMutation();
+  useEffect(() => {
+    const checkToken = async () => {
+      const token = await AsyncStorage.getItem('token');
+      if (token) {
+        // If token exists, navigate to HomeScreen
+        navigation.navigate('HomeScreen');
+      }
+    };
+    
+    checkToken();
+  }, [navigation]);
 
   // Form validation function
   const validateForm = (): boolean => {

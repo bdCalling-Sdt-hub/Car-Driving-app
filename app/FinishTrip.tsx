@@ -113,7 +113,7 @@ const FinishTrip = () => {
       if (response?.data?.code === 'invalid') {
         Alert.alert("Login Error", "Invalid email or password.");
       } else if (response?.data?.code === 'success') {
-        await AsyncStorage.setItem("startedTrip", JSON.stringify(response?.data));
+        await AsyncStorage.setItem("finishtrip", JSON.stringify(response?.data));
         Alert.alert("Success", "Trip finished successfully!");
         navigation.navigate("AddTrip");
       } else {

@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: "https://api.simplydispatch.ca/driverslog",
+  
   prepareHeaders: async (headers) => {
     const token = await AsyncStorage.getItem("token");
     if (token) {

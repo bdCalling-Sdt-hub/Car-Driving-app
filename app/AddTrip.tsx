@@ -14,7 +14,7 @@ import {
 import { Ionicons, MaterialIcons, AntDesign, FontAwesome } from '@expo/vector-icons';
 import tw from 'twrnc'; // Import twrnc
 
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useIsFocused, useNavigation, useRoute } from '@react-navigation/native';
 import Header from './components/Header';
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from './components/types';
@@ -111,6 +111,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
 
 
   const [tripAcvitys, setTripAcvitys] = useState([]);
+  const isFocused = useIsFocused();
 
   useEffect(() => {
     const getTrips = async () => {
@@ -129,10 +130,30 @@ const AddTrip: React.FC<AddTripProps> = () => {
     };
 
     getTrips();
-  }, [Navigation]);
+  }, [Navigation,isFocused]);
 
 
-  console.log('startedTrip-----------', startedTrip);
+  useEffect(() => {
+    const getfinsihtrip = async () => {
+      try {
+        const trips = await AsyncStorage.getItem('finishtrip');
+        console.log("Raw AsyncStorage Data:", trips)
+        if (trips) {
+          const parsedTrips = JSON.parse(trips);
+          console.log("Parsed Trips:", parsedTrips);
+          setTripdetails(parsedTrips);
+        }
+      } catch (error) {
+        console.error('Error retrieving trips:', error);
+        // Navigation.navigate('');
+      }
+    };
+
+    getfinsihtrip();
+  }, [Navigation,isFocused]);
+
+
+  console.log('dtls-----------', tripdetails);
 
   const [trips, setTrips] = useState<Trip[]>([]);
 
@@ -183,9 +204,6 @@ const AddTrip: React.FC<AddTripProps> = () => {
 
   // Add a finish location to the current trip
   const finishTrip = () => {
-
-
-
     Navigation.navigate('FinishTrip');
   };
   useEffect(() => {
@@ -193,7 +211,6 @@ const AddTrip: React.FC<AddTripProps> = () => {
       const token = await AsyncStorage.getItem("token");
       setApikey(token);
     };
-
     checkToken();
   }, []);
 
@@ -204,8 +221,11 @@ const AddTrip: React.FC<AddTripProps> = () => {
   const typeDataList = typeData?.data.loadtypes || [];
   // console.log('typeDataList', typeDataList);
 
+const matched = tripdetails?.TripNumber === startedTrip?.TripNumber;
 
 
+console.log('matched', matched);
+console.log('matched', tripdetails?.TripNumber === startedTrip?.TripNumber);
   // Handle form submission
   const handleAddTrip = async () => {
 
@@ -233,18 +253,12 @@ const AddTrip: React.FC<AddTripProps> = () => {
       console.log("API Response:", response);
       setTripAcvitys(response?.data);
       if (response?.data?.code === 'success') {
-        Alert.alert("Trip Added Successfully");
+        Alert.alert( "Trip Added","Trip Added Successfully");
       }
     } catch (error) {
       console.error("Error adding trip:", error);
     }
-    // try {
-    //   const response = await AddTripAcvity({ apikey, body: tripData }).unwrap();
-    //   console.log("API Response:", response);
-    // } catch (error) {
-    //   console.error("API Error:", error);
-    // }
-
+  
   };
 
 
@@ -268,29 +282,6 @@ const AddTrip: React.FC<AddTripProps> = () => {
 
 
 
-  useEffect(() => {
-    const fetchTripData = async () => {
-      const tripData = {
-        status: 200,
-        TripNumber: startedTrip?.TripNumber,
-      };
-  
-      try {
-        const response = await OneTripAcvity({ apikey, body: tripData }).unwrap();
-        if (response?.data) {
-          setTripdetails(response.data);
-        }
-      } catch (error) {
-        console.error("Error fetching trip:", error);
-      }
-    };
-  
-    if (finishTrip && !hasFetched && startedTrip?.TripNumber && apikey) {
-      fetchTripData();
-      setHasFetched(true);  // Mark as fetched to avoid the loop
-    }
-  },[finishTrip, startedTrip?.TripNumber, apikey]); 
-  
 
   console.log('tripdetails', tripdetails);
   return (
@@ -377,8 +368,8 @@ const AddTrip: React.FC<AddTripProps> = () => {
 
         {/* Add Trip Button */}
         <TouchableOpacity
-         disabled={!!tripdetails?.finish}
-          style={tw`mx-2 mb-4 ${tripdetails?.finish ? 'bg-gray-400' : 'bg-[#29adf8]'} py-2 rounded-sm`}
+          disabled={matched}
+          style={tw`mx-2 mb-4 ${matched ? 'bg-gray-400' : 'bg-[#29adf8]'} py-2 rounded-sm`}
           onPress={handleAddTrip}
         >
           <Text style={tw`text-white text-lg text-center font-bold`}>Add Trip</Text>
@@ -390,9 +381,6 @@ const AddTrip: React.FC<AddTripProps> = () => {
 
           <View style={tw`p-4`}>
             <View style={tw`h-[100%] absolute right-2 bg-gray-300 w-[2px] mr-2`} />
-
-
-
             <View style={tw`flex-row items-center absolute -right-1 pr-2 -top-2`}>
               <FontAwesome
                 name="circle"
@@ -401,28 +389,60 @@ const AddTrip: React.FC<AddTripProps> = () => {
                 color={"green"}
               />
             </View>
-
-
             <Text style={tw`text-base font-semibold`}>Start</Text>
-
-
             <Text style={tw`text-xs text-gray-500`}>start time: {startedTrip?.start?.timestamp}</Text>
             <Text style={tw`text-xs text-gray-500`}>End Time: {startedTrip?.start?.maxactivitytimelimit}</Text>
             <Text style={tw`text-sm text-gray-600`}>Location: {startedTrip?.start?.location}</Text>
 
           </View>
 
-          <FlatList
+          {/* <FlatList
             data={tripAcvitys?.activities}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => {
 
-              const formattedTime = item.timestamp
-                ? format(new Date(item.timestamp), "dd MMM yyyy, hh:mm a")
-                : "N/A";
+
 
               return (
                 <View style={tw`p-4`}>
+                  <View style={tw`h-[100%] absolute right-2 bg-gray-300 w-[2px] mr-2`} />
+
+                  <View style={tw`flex-row items-center absolute -right-1 pr-2 -top-2`}>
+                    <FontAwesome
+                      name="circle"
+                      style={tw`border border-gray-300 py-1 px-[5px] rounded-full`}
+                      size={18}
+                      color={item.activity === "Pickup" ? "blue" : "green"}
+                    />
+                  </View>
+
+    
+                  <Text style={tw`text-base font-semibold`}>{item.activity}</Text>
+
+        
+                  <Text style={tw`text-xs text-gray-500`}>{formattedTime}</Text>
+
+      
+                  <Text style={tw`text-sm text-gray-600`}>Location: {item.location}</Text>
+                  <Text style={tw`text-sm text-gray-600`}>Quantity: {item.qty} {item.Type}</Text>
+
+                  {item.notes && (
+                    <Text style={tw`text-sm text-gray-500 italic`}>Notes: {item.notes}</Text>
+                  )}
+                </View>
+              );
+            }}
+          /> */}
+
+
+          {
+            tripAcvitys?.activities?.map((item, index) => {
+              const formattedTime = item.timestamp
+                ? format(new Date(item.timestamp), "dd MMM yyyy, hh:mm a")
+                : "N/A";
+              return (
+
+                <View key={index} style={tw`p-4`}>
                   <View style={tw`h-[100%] absolute right-2 bg-gray-300 w-[2px] mr-2`} />
 
                   <View style={tw`flex-row items-center absolute -right-1 pr-2 -top-2`}>
@@ -448,12 +468,13 @@ const AddTrip: React.FC<AddTripProps> = () => {
                     <Text style={tw`text-sm text-gray-500 italic`}>Notes: {item.notes}</Text>
                   )}
                 </View>
-              );
-            }}
-          />
+              )
+            }
+            )
+          }
 
           {
-            tripdetails?.finish && (
+            matched && (
               <View style={tw`p-4`}>
                 <View style={tw`h-[100%] absolute right-2 bg-gray-300 w-[2px] mr-2`} />
 
@@ -479,8 +500,8 @@ const AddTrip: React.FC<AddTripProps> = () => {
           }
 
           <TouchableOpacity
-            disabled={!!tripdetails?.finish} // Convert to boolean
-            style={tw`mx-2 mb-4 mt-20 py-2 rounded-sm ${tripdetails?.finish ? "bg-gray-400" : "bg-red-500"
+            disabled={matched} // Convert to boolean
+            style={tw`mx-2 mb-4 mt-20 py-2 rounded-sm ${matched ? "bg-gray-400" : "bg-red-500"
               }`}
             onPress={finishTrip}
           >
