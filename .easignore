@@ -1,0 +1,15 @@
+# .easignore
+node_modules/
+**/ios/
+**/android/build/
+**/android/app/build/
+**/android/.gradle/
+assets/
+.git/
+.expo/
+dist/
+*.log
+*.mp4
+*.mov
+*.zip
+*.psd

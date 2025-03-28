@@ -49,7 +49,8 @@ const SignInPage: React.FC = () => {
     // Check if response contains 'user' or any necessary data
     if (response?.data?.apikey) {
       AsyncStorage.setItem("token", response?.data?.apikey);
-      alert("Sign In Success");
+      AsyncStorage.setItem("user", JSON.stringify(response?.data));
+      // alert("Sign In Success");
       navigation.navigate("HomeScreen");
     }
 
@@ -63,14 +64,14 @@ const SignInPage: React.FC = () => {
       </Text>
 
       <TextInput
-        style={tw`border border-gray-300 rounded-lg px-2 mb-4 text-[16px] font-bold text-gray-600`}
+        style={tw`border border-gray-300 rounded-lg h-[44px] px-2 mb-4 text-[16px] font-bold text-gray-600`}
         placeholder="Email"
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
       />
 
-      <View style={tw`flex-row items-center border border-gray-300 rounded-lg p-1 mb-6`}>
+      <View style={tw`flex-row items-center border border-gray-300 rounded-lg  mb-6`}>
         <TextInput
           style={tw`flex-1 text-[16px] px-2 font-bold text-gray-600`}
           placeholder="Password"
@@ -78,7 +79,7 @@ const SignInPage: React.FC = () => {
           onChangeText={setPassword}
           secureTextEntry={!passwordVisible}
         />
-        <TouchableOpacity style={tw`px-2`} onPress={() => setPasswordVisible(!passwordVisible)}>
+        <TouchableOpacity style={tw`p-2`} onPress={() => setPasswordVisible(!passwordVisible)}>
           <Ionicons name={passwordVisible ? "eye" : "eye-off"} size={24} color="gray" />
         </TouchableOpacity>
       </View>

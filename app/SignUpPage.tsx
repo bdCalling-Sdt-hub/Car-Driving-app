@@ -68,11 +68,11 @@ const SignUpPage: React.FC = () => {
       try {
         // Call the mutation to register the user
         const response = await registerUser(user).unwrap();
-        console.log("response", response);
+        console.log("response signup", response);
 
         if (response?.status === 200) {
           AsyncStorage.setItem("token", response?.data?.apikey);
-          Alert.alert("Success", response?.data?.message);
+          AsyncStorage.setItem("user", JSON.stringify(response?.data));
           navigation.navigate("HomeScreen"); // Navigate to home screen
         } else {
           Alert.alert("Error", "Failed to create account.");
@@ -94,7 +94,7 @@ const SignUpPage: React.FC = () => {
 
       {/* Name Input */}
       <TextInput
-        style={tw`border border-gray-300 rounded-lg px-2 mb-4 text-[16px] font-bold text-gray-600`}
+        style={tw`border border-gray-300 rounded-lg h-[44px] px-2 mb-4 text-[16px] font-bold text-gray-600`}
         placeholder="Name"
         value={name}
         onChangeText={setName}
@@ -102,7 +102,7 @@ const SignUpPage: React.FC = () => {
 
       {/* Email Input */}
       <TextInput
-        style={tw`border border-gray-300 rounded-lg px-2 mb-4 text-[16px] font-bold text-gray-600`}
+        style={tw`border border-gray-300 rounded-lg h-[44px] px-2 mb-4 text-[16px] font-bold text-gray-600`}
         placeholder="Email"
         value={email}
         onChangeText={setEmail}
@@ -110,15 +110,15 @@ const SignUpPage: React.FC = () => {
       />
 
       {/* Password Input */}
-      <View style={tw`flex-row items-center border border-gray-300 rounded-lg p-1 mb-4`}>
+      <View style={tw`flex-row items-center border border-gray-300 rounded-lg  mb-4`}>
         <TextInput
-          style={tw`flex-1 text-[16px] px-2 font-bold text-gray-600`}
+          style={tw`flex-1 text-[16px] h-[44px]  px-2 font-bold text-gray-600`}
           placeholder="Password"
           value={password}
           onChangeText={setPassword}
           secureTextEntry={!passwordVisible}
         />
-        <TouchableOpacity style={tw`px-2`} onPress={() => setPasswordVisible(!passwordVisible)}>
+        <TouchableOpacity style={tw` px-2`} onPress={() => setPasswordVisible(!passwordVisible)}>
           <Ionicons name={passwordVisible ? "eye" : "eye-off"} size={24} color="gray" />
         </TouchableOpacity>
       </View>
@@ -148,9 +148,9 @@ const SignUpPage: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      <View style={tw`w-[70%] mx-auto mt-4`}>
-        <Image source={require("../assets/images/dispatch.png")} />
-      </View>
+      {/* <View style={tw`w-[70%] mx-auto mt-4`}>
+        <Image source={require("@/assets/images/dispatch.png")} />
+      </View> */}
     </View>
   );
 };

@@ -14,25 +14,11 @@ type RootStackParamList = {
   AddTrip: undefined;
 };
 
-const currentDate = new Date();
-const formattedDate = currentDate.toLocaleDateString('en-US', {
-  weekday: 'short', // 'Mon'
-  year: 'numeric', // '2025'
-  month: 'short', // 'Jan'
-  day: 'numeric', // '29'
-});
-
-const DateSection = () => (
-  <View style={tw`flex-row justify-between p-3 bg-[#f1f0f6]`}>
-    <Text style={tw`text-lg font-bold text-gray-700`}>Start Your Day</Text>
-    <Text style={tw`text-lg font-bold text-gray-700`}>{formattedDate}</Text>
-  </View>
-);
-
 const HomeScreen = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [apikey, setApikey] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [currentTime, setCurrentTime] = useState('');
   const [formData, setFormData] = useState({
     activity: "",
     location: "",
@@ -46,6 +32,7 @@ const HomeScreen = () => {
   useEffect(() => {
     const checkToken = async () => {
       const token = await AsyncStorage.getItem("token");
+      setApikey(token);
       if (!token) {
         navigation.navigate("SignInPage");
       } else {
@@ -105,21 +92,54 @@ const HomeScreen = () => {
     }
   };
 
+  // Set the current time to update every second and format it as Day, Month DD, YYYY
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     const currentDate = new Date();
+  //     const formattedDate = currentDate.toLocaleDateString('en-US', {
+  //       weekday: 'long', // Day of the week (e.g., Friday)
+  //       month: 'long', // Full month name (e.g., March)
+  //       day: 'numeric', // Day of the month (e.g., 28)
+  //       year: 'numeric', // Full year (e.g., 2025)
+  //     });
+  //     setCurrentTime(formattedDate);
+  //   }, 1000); // Update every second
+
+  //   return () => clearInterval(interval); // Cleanup on unmount
+  // }, []);
+
   return (
     <View style={tw`flex-1 bg-white`}>
       <Stack.Screen options={{ headerShown: false }} />
       <Header />
-      <DateSection />
+      <View style={tw`flex-row justify-between p-3 bg-[#f1f0f6]`}>
+        <Text style={tw`text-lg font-bold text-gray-700`}>Start Your Day</Text>
+        <Text style={tw`text-lg font-bold text-gray-700 text-center`}>
+          {
+        
+           currentTime && new Date(currentTime)?.toLocaleTimeString(undefined, { hour: 'numeric', minute: 'numeric', hour12: true }) || new Date().toLocaleDateString('en-US', {
+            weekday: 'long', // Day of the week (e.g., Friday)
+            month: 'long',   // Full month name (e.g., March)
+            day: 'numeric',  // Day of the month (e.g., 28)
+            year: 'numeric', // Full year (e.g., 2025)
+          })}
+        </Text>
+
+      </View>
+
+      {/* Display current time */}
+
       <FormSection
         formData={formData}
         setFormData={setFormData}
+        setcurrentTime={setCurrentTime}
         activityList={data?.data?.activitylist || []}
         trucklistandtailorlist={truckandTailordata?.data || []}
       />
 
       <View style={tw`flex flex-row items-center justify-end px-4`}>
         <TouchableOpacity
-          style={tw`bg-[#29adf8] p-3 mb-4 rounded w-[40%]`}
+          style={tw`bg-[#29adf8] p-3 mb-4 rounded w-[100%]`}
           onPress={handleSubmit}
         >
           <Text style={tw`text-white text-center font-bold text-lg`}>Start Trip</Text>

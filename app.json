@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "SRL",
+    "name": "Simply Dispatch",
     "slug": "SRL",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/appicon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -13,7 +13,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/appicon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.mahedi25.SRL"
@@ -21,7 +21,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/appicon.png"
     },
     "plugins": [
       "expo-router",
