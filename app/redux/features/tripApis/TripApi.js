@@ -72,6 +72,7 @@ const TripApi = api.injectEndpoints({
 
     HeaderLogo : builder.query({
       query: ({ apikey }) => ({
+        
         url: `/headerlogo.php?apikey=${apikey}`,
         method: "GET",
       }),

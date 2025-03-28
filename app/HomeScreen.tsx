@@ -8,6 +8,7 @@ import FormSection from './components/FormSection';
 import { useActivityDropDownListQuery, useStartNewTripMutation, useTrucksandtailorsQuery } from './redux/features/tripApis/TripApi';
 import { Stack } from 'expo-router';
 
+
 // Define the navigation types
 type RootStackParamList = {
   SignInPage: undefined;
@@ -28,6 +29,9 @@ const HomeScreen = () => {
     odometer: "",
   });
 
+console.log('currenrt time', currentTime);
+
+  
   // Fetch stored API key
   useEffect(() => {
     const checkToken = async () => {
@@ -79,8 +83,21 @@ const HomeScreen = () => {
         Alert.alert("Login Error", "Invalid email or password.");
       } else if (response?.data?.code === 'success') {
         await AsyncStorage.setItem("startedTrip", JSON.stringify(response?.data));
+        setFormData({
+          activity: "",
+          location: "",
+          currentTime: "",
+          truck: "",
+          trailer: "",
+          odometer: "",
+        });
         Alert.alert("Success", "Trip started successfully!");
         navigation.navigate("AddTrip");
+
+
+
+
+
       } else {
         Alert.alert("Error", "Unexpected response from the server.");
       }
@@ -90,23 +107,11 @@ const HomeScreen = () => {
     } finally {
       setLoading(false);
     }
+
+
+    
   };
 
-  // Set the current time to update every second and format it as Day, Month DD, YYYY
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     const currentDate = new Date();
-  //     const formattedDate = currentDate.toLocaleDateString('en-US', {
-  //       weekday: 'long', // Day of the week (e.g., Friday)
-  //       month: 'long', // Full month name (e.g., March)
-  //       day: 'numeric', // Day of the month (e.g., 28)
-  //       year: 'numeric', // Full year (e.g., 2025)
-  //     });
-  //     setCurrentTime(formattedDate);
-  //   }, 1000); // Update every second
-
-  //   return () => clearInterval(interval); // Cleanup on unmount
-  // }, []);
 
   return (
     <View style={tw`flex-1 bg-white`}>
@@ -117,7 +122,7 @@ const HomeScreen = () => {
         <Text style={tw`text-lg font-bold text-gray-700 text-center`}>
           {
         
-           currentTime && new Date(currentTime)?.toLocaleTimeString(undefined, { hour: 'numeric', minute: 'numeric', hour12: true }) || new Date().toLocaleDateString('en-US', {
+           currentTime && currentTime || new Date().toLocaleDateString('en-US', {
             weekday: 'long', // Day of the week (e.g., Friday)
             month: 'long',   // Full month name (e.g., March)
             day: 'numeric',  // Day of the month (e.g., 28)
@@ -133,6 +138,7 @@ const HomeScreen = () => {
         formData={formData}
         setFormData={setFormData}
         setcurrentTime={setCurrentTime}
+        currentTime={currentTime}
         activityList={data?.data?.activitylist || []}
         trucklistandtailorlist={truckandTailordata?.data || []}
       />

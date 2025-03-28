@@ -25,7 +25,7 @@ const formattedDate = currentDate.toLocaleDateString('en-US', {
 const DateSection = () => (
   <View style={tw`flex-row justify-between p-3 bg-[#f1f0f6]`}>
     <Text style={tw`text-lg font-bold text-gray-700`}>Start Your Day</Text>
-    <Text style={tw`text-lg font-bold text-gray-700`}>{formattedDate}</Text>
+    <Text style={tw`text-lg font-bold text-gray-700`}>{ currentDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric' }) || formattedDate} </Text>
   </View>
 );
 
@@ -41,6 +41,7 @@ const FinishTrip = () => {
     trailer: "",
     odometer: "",
   });
+    const [currentTime, setCurrentTime] = useState('');
 
   // Fetch stored API key
   useEffect(() => {
@@ -135,6 +136,8 @@ const FinishTrip = () => {
       <FormSection
         formData={formData}
         setFormData={setFormData}
+        setcurrentTime={setCurrentTime}
+        currentTime={currentTime}
         activityList={data?.data?.activitylist || []}
         trucklistandtailorlist={truckandTailordata?.data || []}
       />

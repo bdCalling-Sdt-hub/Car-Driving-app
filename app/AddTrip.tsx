@@ -21,6 +21,7 @@ import { RootStackParamList } from './components/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useActivityDropDownListQuery, useAddTripAcvityMutation, useOneTripAcvityMutation, useTypeDropDownListQuery } from './redux/features/tripApis/TripApi';
 import { format } from "date-fns";
+import DatePicker from 'react-native-date-picker';
 // Define TypeScript interfaces
 interface TripDetailItemProps {
   type: string;
@@ -130,7 +131,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
     };
 
     getTrips();
-  }, [Navigation,isFocused]);
+  }, [Navigation, isFocused]);
 
 
   useEffect(() => {
@@ -150,7 +151,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
     };
 
     getfinsihtrip();
-  }, [Navigation,isFocused]);
+  }, [Navigation, isFocused]);
 
 
   console.log('dtls-----------', tripdetails);
@@ -180,6 +181,10 @@ const AddTrip: React.FC<AddTripProps> = () => {
 
   const currentDate = getCurrentDate();
 
+  // Get current time in the format "8:00 AM"
+
+  const [open, setOpen] = useState(false);
+  const [time, setTime] = useState(new Date());
 
 
 
@@ -221,11 +226,11 @@ const AddTrip: React.FC<AddTripProps> = () => {
   const typeDataList = typeData?.data.loadtypes || [];
   // console.log('typeDataList', typeDataList);
 
-const matched = tripdetails?.TripNumber === startedTrip?.TripNumber;
+  const matched = tripdetails?.TripNumber === startedTrip?.TripNumber;
 
 
-console.log('matched', matched);
-console.log('matched', tripdetails?.TripNumber === startedTrip?.TripNumber);
+  console.log('matched', matched);
+  console.log('matched', tripdetails?.TripNumber === startedTrip?.TripNumber);
   // Handle form submission
   const handleAddTrip = async () => {
 
@@ -253,12 +258,12 @@ console.log('matched', tripdetails?.TripNumber === startedTrip?.TripNumber);
       console.log("API Response:", response);
       setTripAcvitys(response?.data);
       if (response?.data?.code === 'success') {
-        Alert.alert( "Trip Added","Trip Added Successfully");
+        Alert.alert("Trip Added", "Trip Added Successfully");
       }
     } catch (error) {
       console.error("Error adding trip:", error);
     }
-  
+
   };
 
 
@@ -291,8 +296,8 @@ console.log('matched', tripdetails?.TripNumber === startedTrip?.TripNumber);
 
       <ScrollView style={tw`flex-1`}>
         <View style={tw`flex-row justify-between items-center p-4 bg-gray-100 border-b border-gray-300`}>
-          <Text style={tw`text-2xl font-bold text-gray-800`}>Add Trip Info</Text>
-          <Text style={tw`text-base text-gray-800`}>{currentDate}</Text>
+          <Text style={tw`text-xl font-bold text-gray-800`}>Add Trip Info</Text>
+          <Text style={tw`text-base text-gray-800`}>{ formatDateTime(time) || currentDate}</Text>
         </View>
 
         {/* Form Section */}
@@ -314,22 +319,37 @@ console.log('matched', tripdetails?.TripNumber === startedTrip?.TripNumber);
               style={tw`flex-1 h-11 border border-gray-300 rounded px-2.5`}
               value={consignee}
               onChangeText={setConsignee}
-              placeholder="Dropoff Location (Google)"
+              placeholder="Dropoff Location "
             />
           </View>
 
           <View style={tw`flex-row items-center mb-4`}>
             <Text style={tw`w-24 text-base font-medium`}>Delivery:</Text>
-            <View style={tw`flex-1 flex-row items-center`}>
-              <TouchableOpacity
-                style={tw`w-[90px] h-11 border border-gray-300 rounded px-2.5 mr-1 flex-row items-center justify-between`}
-                onPress={() => setShowTimeModal(true)}
-              >
-                <Text>{deliveryTime}</Text>
-                <Ionicons name="time-outline" size={24} color="black" />
-              </TouchableOpacity>
+            <View style={tw`flex-1 flex flex-row items-center gap-2`}>
+              <View style={tw`flex-1 border border-gray-300 rounded  max-w-[70%]`}>
+                <TouchableOpacity onPress={() => setOpen(true)} style={tw`h-[44px] justify-center`}>
+                  <Text style={tw`text-gray-700 text-[15px]  px-2`}>
+                    {time ? time.toLocaleTimeString() : 'Select Time'}
+                  </Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity style={tw`w-8 h-11 border border-gray-300 rounded items-center justify-center mr-1`}>
+                <DatePicker
+                  modal
+                  mode="time"
+                  open={open}
+                  date={time}
+                  onConfirm={(time) => {
+                    setOpen(false);
+                    setDeliveryTime(time.toLocaleTimeString());
+                    setTime(time);
+                  }}
+                  onCancel={() => {
+                    setOpen(false);
+                  }}
+                />
+              </View>
+
+              <TouchableOpacity style={tw`flex-1 max-w-[20%] h-11 border border-gray-300 rounded items-center justify-center mr-1`}>
                 <TextInput
                   style={tw`text-center w-full h-full`}
                   value={quantity}
@@ -340,44 +360,60 @@ console.log('matched', tripdetails?.TripNumber === startedTrip?.TripNumber);
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={tw`w-[85px] h-11 border border-gray-300 rounded px-2.5 mr-1 flex-row items-center justify-between`}
+                style={tw`flex-1 max-w-[35%] h-11 border border-gray-300 rounded px-2.5 mr-1 flex-row items-center justify-between`}
                 onPress={() => setShowTypeModal(true)}
               >
                 <Text>{type}</Text>
                 <MaterialIcons name="arrow-drop-down" size={24} color="black" />
               </TouchableOpacity>
 
+
+            </View>
+          </View>
+
+          <View style={tw`flex flex-row items-center gap-2 justify-end`}>
+            <TextInput
+              style={tw`h-11 w-full max-w-[62%]  border border-gray-300 rounded px-2.5 mb-4 text-center`}
+              placeholder="Receiver Name"
+              value={receiverName}
+              onChangeText={setReceiverName}
+              placeholderTextColor="#000"
+            />
+            <View style={tw`flex-1 max-w-[10%] pb-4`}>
+
               <TouchableOpacity
-                style={tw`w-8 h-8 rounded-full bg-green-500 items-center justify-center`}
+                style={tw`w-[33px] h-8 rounded-full bg-green-500 items-center justify-center`}
                 onPress={() => setShowAddNoteModal(true)}
               >
                 <AntDesign name="plus" size={24} color="white" />
               </TouchableOpacity>
+
             </View>
+
           </View>
 
-          <TextInput
-            style={tw`h-11 border border-gray-300 rounded px-2.5 mb-4 text-center`}
-            placeholder="Receiver Name"
-            value={receiverName}
-            onChangeText={setReceiverName}
-            placeholderTextColor="#000"
-          />
 
         </View>
 
-        {/* Add Trip Button */}
+
+
         <TouchableOpacity
           disabled={matched}
-          style={tw`mx-2 mb-4 ${matched ? 'bg-gray-400' : 'bg-[#29adf8]'} py-2 rounded-sm`}
+          style={tw`mx-2 mb-4 flex-1 max-w-[100%] ${matched ? 'bg-gray-400' : 'bg-[#29adf8]'} py-2 rounded-sm`}
           onPress={handleAddTrip}
         >
-          <Text style={tw`text-white text-lg text-center font-bold`}>Add Trip</Text>
+          <Text style={tw`text-white text-lg text-center font-bold`}>Add trip acvity</Text>
         </TouchableOpacity>
+
+
+
+
+        {/* Add Trip Button */}
+
 
         {/* Trip Details Section */}
         <View style={tw`p-4 bg-white`}>
-          <Text style={tw`text-lg font-bold mb-2`}>Today's Trip Details</Text>
+          <Text style={tw` bg-[#f1f0f6] p-2 mb-4 text-center  font-bold text-lg`}>Today's Trip Details</Text>
 
           <View style={tw`p-4`}>
             <View style={tw`h-[100%] absolute right-2 bg-gray-300 w-[2px] mr-2`} />
@@ -595,7 +631,7 @@ console.log('matched', tripdetails?.TripNumber === startedTrip?.TripNumber);
       </Modal>
 
       {/* Time Selection Modal */}
-      <Modal
+      {/* <Modal
         visible={showTimeModal}
         transparent={true}
         animationType="slide"
@@ -604,7 +640,7 @@ console.log('matched', tripdetails?.TripNumber === startedTrip?.TripNumber);
           <View style={tw`bg-white rounded-lg w-80 p-4`}>
             <Text style={tw`text-lg font-bold mb-4 text-center`}>Select Time</Text>
 
-            {/* Scrollable Time List */}
+
             <View style={tw`h-60`}>
               <ScrollView showsVerticalScrollIndicator={false}>
                 {timeOptions.map((option) => (
@@ -622,7 +658,6 @@ console.log('matched', tripdetails?.TripNumber === startedTrip?.TripNumber);
               </ScrollView>
             </View>
 
-            {/* Cancel Button */}
             <TouchableOpacity
               style={tw`mt-4 bg-gray-200 py-2 rounded-lg`}
               onPress={() => setShowTimeModal(false)}
@@ -632,7 +667,7 @@ console.log('matched', tripdetails?.TripNumber === startedTrip?.TripNumber);
           </View>
         </View>
 
-      </Modal>
+      </Modal> */}
 
       {/* Add Note Modal */}
       <Modal
