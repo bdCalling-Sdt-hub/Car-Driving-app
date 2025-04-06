@@ -150,7 +150,7 @@ const FormSection: React.FC<FormSectionProps> = ({
             </Picker>
           </View>
 
-          <View style={tw`font-bold text-lg border border-gray-300 rounded mb-3 flex-1`}>
+          <View style={tw`font-bold text-lg border border-gray-300    rounded mb-3 flex-1`}>
             <Picker
               selectedValue={formData.trailer}
               onValueChange={(value) => setFormData({ ...formData, trailer: value })}

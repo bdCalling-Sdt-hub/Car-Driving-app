@@ -131,7 +131,7 @@ const CustomSidebar = () => {
         onPress={() => navigation.navigate('AddTrip')}
         style={tw`p-4`}
       >
-        <Text style={tw`text-white text-xl font-semibold border-b-2 pb-2 border-white`}>Add Trip</Text>
+        <Text style={tw`text-white text-xl font-semibold border-b-2 pb-2 border-white`}>Add Trip Acvity</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -151,7 +151,7 @@ const CustomSidebar = () => {
         style={tw`p-4`}
         onPress={handleLogout}
       >
-        <Text style={tw`text-white text-2xl font-semibold`}>Sign Out</Text>
+        <Text style={tw`text-white text-xl font-semibold  pb-2 `}>Sign Out</Text>
       </TouchableOpacity>
     </View>
   );

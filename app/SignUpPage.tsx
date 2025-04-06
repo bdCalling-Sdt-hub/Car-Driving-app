@@ -126,7 +126,7 @@ const SignUpPage: React.FC = () => {
       {/* Sign Up Button */}
       <TouchableOpacity
         onPress={handleSignUp}
-        style={tw`bg-[#29adf8] w-[70%] mx-auto py-3 shadow-lg rounded-lg items-center`}
+        style={tw`bg-[#29adf8] w-[70%] mt-6 mx-auto py-3 shadow-lg rounded-lg items-center`}
       >
         <Text style={tw`text-white text-lg font-bold`}>
           {isLoading ? "Signing up..." : "Get Started"}
@@ -134,7 +134,7 @@ const SignUpPage: React.FC = () => {
       </TouchableOpacity>
 
       {/* Other Sign Up Options */}
-      <Text style={tw`text-center text-gray-500 text-lg mt-4 mb-4`}>Or sign up with</Text>
+      {/* <Text style={tw`text-center text-gray-500 text-lg mt-4 mb-4`}>Or sign up with</Text>
 
       <View>
         <TouchableOpacity style={tw`flex-row items-center border border-gray-300 p-3 w-[75%] mx-auto rounded-lg mb-3`}>
@@ -146,7 +146,7 @@ const SignUpPage: React.FC = () => {
           <Ionicons name="logo-apple" size={25} color="black" />
           <Text style={tw`ml-2 text-lg font-bold`}>Continue with Apple</Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
 
       {/* <View style={tw`w-[70%] mx-auto mt-4`}>
         <Image source={require("@/assets/images/dispatch.png")} />

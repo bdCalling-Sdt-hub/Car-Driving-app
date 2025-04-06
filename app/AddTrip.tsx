@@ -98,9 +98,9 @@ const AddTrip: React.FC<AddTripProps> = () => {
   // Form state
   const [activity, setActivity] = useState<string>('Dropoff/ Delivery');
   const [consignee, setConsignee] = useState<string>('');
-  const [deliveryTime, setDeliveryTime] = useState<string>('8:00 AM');
-  const [quantity, setQuantity] = useState<string>('1');
-  const [type, setType] = useState<string>('Package');
+  const [deliveryTime, setDeliveryTime] = useState<string>('');
+  const [quantity, setQuantity] = useState<string>('');
+  const [type, setType] = useState<string>('Select Type');
   const [receiverName, setReceiverName] = useState<string>('');
   const [note, setNote] = useState<string>('');
   const [startedTrip, setStartedTrip] = useState(null);
@@ -296,8 +296,8 @@ const AddTrip: React.FC<AddTripProps> = () => {
 
       <ScrollView style={tw`flex-1`}>
         <View style={tw`flex-row justify-between items-center p-4 bg-gray-100 border-b border-gray-300`}>
-          <Text style={tw`text-xl font-bold text-gray-800`}>Add Trip Info</Text>
-          <Text style={tw`text-base text-gray-800`}>{ formatDateTime(time) || currentDate}</Text>
+          <Text style={tw`text-xl font-bold text-gray-800`}>Add Trip Activity</Text>
+          {/* <Text style={tw`text-base text-gray-800`}>{ formatDateTime(time) || currentDate}</Text> */}
         </View>
 
         {/* Form Section */}
@@ -327,8 +327,8 @@ const AddTrip: React.FC<AddTripProps> = () => {
             <Text style={tw`w-24 text-base font-medium`}>Delivery:</Text>
             <View style={tw`flex-1 flex flex-row items-center gap-2`}>
               <View style={tw`flex-1 border border-gray-300 rounded  max-w-[70%]`}>
-                <TouchableOpacity onPress={() => setOpen(true)} style={tw`h-[44px] justify-center`}>
-                  <Text style={tw`text-gray-700 text-[15px]  px-2`}>
+                <TouchableOpacity onPress={() => setOpen(true)} style={tw`h-[42px] justify-center`}>
+                  <Text style={tw`text-gray-700 text-[15px]  px-2 pl-3`}>
                     {time ? time.toLocaleTimeString() : 'Select Time'}
                   </Text>
                 </TouchableOpacity>
@@ -349,7 +349,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
                 />
               </View>
 
-              <TouchableOpacity style={tw`flex-1 max-w-[20%] h-11 border border-gray-300 rounded items-center justify-center mr-1`}>
+              <TouchableOpacity style={tw`flex-1 max-w-[20%] h-[42px] border border-gray-300 rounded items-center justify-center mr-1`}>
                 <TextInput
                   style={tw`text-center w-full h-full`}
                   value={quantity}
@@ -360,7 +360,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={tw`flex-1 max-w-[35%] h-11 border border-gray-300 rounded px-2.5 mr-1 flex-row items-center justify-between`}
+                style={tw`flex-1 max-w-[35%] h-[42px] border border-gray-300 rounded px-2.5 mr-1 flex-row items-center justify-between`}
                 onPress={() => setShowTypeModal(true)}
               >
                 <Text>{type}</Text>
@@ -372,13 +372,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
           </View>
 
           <View style={tw`flex flex-row items-center gap-2 justify-end`}>
-            <TextInput
-              style={tw`h-11 w-full max-w-[62%]  border border-gray-300 rounded px-2.5 mb-4 text-center`}
-              placeholder="Receiver Name"
-              value={receiverName}
-              onChangeText={setReceiverName}
-              placeholderTextColor="#000"
-            />
+         
             <View style={tw`flex-1 max-w-[10%] pb-4`}>
 
               <TouchableOpacity
@@ -389,6 +383,13 @@ const AddTrip: React.FC<AddTripProps> = () => {
               </TouchableOpacity>
 
             </View>
+            <TextInput
+              style={tw`h-11 w-full max-w-[62%]  border border-gray-300 rounded px-2.5 mb-4 text-center`}
+              placeholder="Receiver Name"
+              value={receiverName}
+              onChangeText={setReceiverName}
+              placeholderTextColor="#000"
+            />
 
           </View>
 
@@ -412,11 +413,18 @@ const AddTrip: React.FC<AddTripProps> = () => {
 
 
         {/* Trip Details Section */}
-        <View style={tw`p-4 bg-white`}>
-          <Text style={tw` bg-[#f1f0f6] p-2 mb-4 text-center  font-bold text-lg`}>Today's Trip Details</Text>
+        <View style={tw` bg-white`}>
+          {/* <Text style={tw` bg-[#f1f0f6] p-2 mb-4 text-center  font-bold text-lg`}>Today's Trip Details</Text> */}
 
+          <TouchableOpacity
+          disabled={matched}
+          style={tw`mx-2 mb-4 flex-1 max-w-[100%] bg-[#f1f0f6]  py-2 rounded-sm`}
+        
+        >
+          <Text style={tw` text-lg pl-4 text-gray-700 font-bold `}>Today's Trip Details</Text>
+        </TouchableOpacity>
           <View style={tw`p-4`}>
-            <View style={tw`h-[100%] absolute right-2 bg-gray-300 w-[2px] mr-2`} />
+            <View style={tw`h-[100%] absolute right-2 border border-dashed border-gray-400 w-[2px] mr-2`} />
             <View style={tw`flex-row items-center absolute -right-1 pr-2 -top-2`}>
               <FontAwesome
                 name="circle"
@@ -479,7 +487,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
               return (
 
                 <View key={index} style={tw`p-4`}>
-                  <View style={tw`h-[100%] absolute right-2 bg-gray-300 w-[2px] mr-2`} />
+                  <View style={tw`h-[100%] absolute right-2  border border-dashed border-gray-400  mr-2`} />
 
                   <View style={tw`flex-row items-center absolute -right-1 pr-2 -top-2`}>
                     <FontAwesome
@@ -512,7 +520,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
           {
             matched && (
               <View style={tw`p-4`}>
-                <View style={tw`h-[100%] absolute right-2 bg-gray-300 w-[2px] mr-2`} />
+                <View style={tw`h-[100%] absolute right-2 border border-dashed border-gray-400 mr-2`} />
 
                 <View style={tw`flex-row items-center absolute -right-1 pr-2 -top-2`}>
                   <FontAwesome
