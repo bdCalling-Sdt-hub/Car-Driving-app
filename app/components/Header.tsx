@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity, Image } from 'react-native';
 import React, { useEffect } from 'react';
 import tw from 'twrnc';
 import { useNavigation } from 'expo-router';
-import { DrawerActions } from '@react-navigation/native';
+import { DrawerActions, useIsFocused } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useHeaderLogoQuery } from '../redux/features/tripApis/TripApi';
@@ -10,6 +10,8 @@ import { useHeaderLogoQuery } from '../redux/features/tripApis/TripApi';
 
 const Header = () => {
     const navigation = useNavigation();
+
+    const isFocused = useIsFocused();
 
     const [user, setUser] = React.useState(null);
     const [token, setToken] = React.useState(null);
@@ -38,7 +40,7 @@ console.log("datass",data?.data?.companylogo);
         };
 
         checkuser();
-    }, []);
+    }, [ isFocused ]);
 
     return (
         <View style={tw`flex-row justify-between items-center bg-[#29adf8]  p-2`}>

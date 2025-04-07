@@ -11,13 +11,14 @@ import store from "./redux/store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useEffect, useState } from "react";
 import { useAuthuserMutation } from "./redux/features/users/UserApi";
+import { useHeaderLogoQuery } from "./redux/features/tripApis/TripApi";
 
 const CustomSidebar = () => {
   const navigation = useNavigation();
-  
+  const [user, setUser] = React.useState(null);
   const [apikey, setApikey] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-
+  const { data, isLoading: headerLoading, isError: headerError } = useHeaderLogoQuery({ apikey: apikey });
   // Fetch stored API key
   useEffect(() => {
     const checkToken = async () => {
@@ -27,7 +28,19 @@ const CustomSidebar = () => {
     };
 
     checkToken();
-  }, []);
+  }, [ ]);
+
+  useEffect(() => {
+    const checkuser = async () => {
+        const user = await AsyncStorage.getItem('user');
+        const parseduser = JSON.parse(user || '{}');
+        setUser(parseduser);
+
+    };
+
+    checkuser();
+}, [ user ]);
+  
 
   // Only run the query if the apikey is available and user clicked Change Password
   const [authenticateUser, { isLoading: authLoading, isError, error }] = useAuthuserMutation();;
@@ -100,15 +113,17 @@ const CustomSidebar = () => {
       </View>
     );
   }
+
+
   
   return (
     <View style={tw`h-full flex-1 bg-[#29adf8] p-5`}>
       {/* Header Section */}
       <View style={tw`flex-row justify-between items-center bg-[#29adf8]  p-2`}>
-        <Image source={require('../assets/images/companylogo_srl.png')} style={{ width: 100, height: 50 }} />
+      <Image source={{ uri: data?.data?.companylogo }} style={tw`aspect-video h-10 `} />
         
         <View style={tw`flex-row items-center gap-3`}>
-          <Text style={tw`text-xl font-bold text-white`}>BANINDER PAL</Text>
+          <Text style={tw`text-xl font-bold text-white`}>{user?.DriverName || 'Driver'}</Text>
           {/* Close Drawer button */}
           <TouchableOpacity
             style={tw`w-10 h-10 rounded-full bg-white bg-opacity-20 items-center justify-center`}
@@ -124,7 +139,7 @@ const CustomSidebar = () => {
         onPress={() => navigation.navigate('HomeScreen')}
         style={tw`p-4`}
       >
-        <Text style={tw`text-white text-xl font-semibold border-b-2 pb-2 border-white`}>Home</Text>
+        <Text style={tw`text-white text-xl font-semibold border-b-2 pb-2 border-white`}>Start Your Day</Text>
       </TouchableOpacity>
       
       <TouchableOpacity
@@ -142,6 +157,7 @@ const CustomSidebar = () => {
       </TouchableOpacity>
       
       <TouchableOpacity
+        // onPress={() => navigation.navigate('https://simplydispatch.ca/help.php')}
         style={tw`p-4`}
       >
         <Text style={tw`text-white text-xl font-semibold border-b-2 pb-2 border-white`}>Help & Support</Text>

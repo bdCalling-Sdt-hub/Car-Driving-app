@@ -24,8 +24,8 @@ const formattedDate = currentDate.toLocaleDateString('en-US', {
 
 const DateSection = () => (
   <View style={tw`flex-row justify-between p-3 bg-[#f1f0f6]`}>
-    <Text style={tw`text-lg font-bold text-gray-700`}>Start Your Day</Text>
-    <Text style={tw`text-lg font-bold text-gray-700`}>{ currentDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric' }) || formattedDate} </Text>
+    <Text style={tw`text-lg font-bold text-gray-700`}>Finish Your Day</Text>
+    <Text style={tw`text-lg font-bold text-gray-700`}>{ formattedDate} </Text>
   </View>
 );
 

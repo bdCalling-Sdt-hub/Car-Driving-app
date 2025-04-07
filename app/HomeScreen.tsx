@@ -31,6 +31,21 @@ const HomeScreen = () => {
 
 console.log('currenrt time', currentTime);
 
+const getCurrentDate = (): string => {
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  const now = new Date();
+  const day = days[now.getDay()];
+  const month = months[now.getMonth()];
+  const date = now.getDate();
+  const year = now.getFullYear();
+
+  return `${day} ${month} ${date} ${year}`;
+};
+
+const currentDate = getCurrentDate();
+
   
   // Fetch stored API key
   useEffect(() => {
@@ -120,14 +135,17 @@ console.log('currenrt time', currentTime);
       <View style={tw`flex-row justify-between p-3 bg-[#f1f0f6]`}>
         <Text style={tw`text-lg font-bold text-gray-700`}>Start Your Day</Text>
         <Text style={tw`text-lg font-bold text-gray-700 text-center`}>
-          {
+          {/* {
         
            currentTime && currentTime || new Date().toLocaleDateString('en-US', {
-            weekday: 'long', // Day of the week (e.g., Friday)
-            month: 'long',   // Full month name (e.g., March)
-            day: 'numeric',  // Day of the month (e.g., 28)
-            year: 'numeric', // Full year (e.g., 2025)
-          })}
+            weekday: 'long', 
+            month: 'long',   
+            day: 'numeric',  
+            year: 'numeric', 
+          })} */}
+          {
+            currentDate
+          }
         </Text>
 
       </View>

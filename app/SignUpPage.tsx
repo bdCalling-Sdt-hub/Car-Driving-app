@@ -57,33 +57,76 @@ const SignUpPage: React.FC = () => {
     return true;
   };
 
+  // const handleSignUp = async () => {
+  //   const user = {
+  //     name,
+  //     email,
+  //     password,
+  //   };
+  
+  //   if (!validateForm()) return; // If validation fails, exit early
+  
+  //   try {
+  //     const response = await registerUser(user).unwrap();
+  //     console.log("response signup", response);
+  
+  //     // Handle failure response
+  //     // if (response?.data?.code === 'Failure') {
+  //     //   Alert.alert("Error", response?.data?.message || "Something went wrong.");
+  //     //   return;
+  //     // }
+  
+  //     // Handle success response
+  //     if (response?.data?.code === 'success') {
+  //       Alert.alert("Success", response?.data?.message || "Account created successfully!");
+  //       navigation.navigate("SignInPage");
+  //     } elseif (response?.data?.code === 'Failure'){
+  //       Alert.alert("Error", response?.data?.message || "Something went wrong.");
+  //     } else {
+  //       Alert.alert("Error", "Failed to create account.");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error during registration", error);
+  //     Alert.alert("Error", "An error occurred during registration.");
+  //   }
+  // };
   const handleSignUp = async () => {
     const user = {
       name,
       email,
       password,
     };
-
-    if (validateForm()) {
-      try {
-        // Call the mutation to register the user
-        const response = await registerUser(user).unwrap();
-        console.log("response signup", response);
-
-        if (response?.status === 200) {
-          AsyncStorage.setItem("token", response?.data?.apikey);
-          AsyncStorage.setItem("user", JSON.stringify(response?.data));
-          navigation.navigate("HomeScreen"); // Navigate to home screen
-        } else {
-          Alert.alert("Error", "Failed to create account.");
-        }
-      } catch (error) {
-        console.error("Error during registration", error);
-        Alert.alert("Error", "An error occurred during registration.");
+  
+    if (!validateForm()) return;
+  
+    try {
+      const response = await registerUser(user).unwrap();
+      console.log("response signup", response);
+  
+      const statusCode = response?.data?.code;
+      const message = response?.data?.message || "Something went wrong.";
+  
+      if (statusCode === 'Success') {
+        Alert.alert("Success", message);
+        setEmail('');
+        setPassword('');
+        setName('');
+        // navigation.navigate("SignInPage");
+        return;
       }
+  
+      if (statusCode === 'Failure') {
+        Alert.alert("Error", message);
+        return;
+      }
+  
+      Alert.alert("Error", "Failed to create account.");
+    } catch (error) {
+      console.error("Error during registration", error);
+      Alert.alert("Error", "An error occurred during registration.");
     }
   };
-
+  
   return (
     <View style={tw`bg-white h-full  `}>
        <Stack.Screen name="SignUpPage" options={{ headerShown: false }} />

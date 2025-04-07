@@ -6,7 +6,7 @@ import SignInPage from "../SignInPage";
 
 
 export default function AuthScreen() {
-  const [activeTab, setActiveTab] = useState("signup");
+  const [activeTab, setActiveTab] = useState("signin");
 
   return (
     <View style={tw`flex-1 bg-white`}>

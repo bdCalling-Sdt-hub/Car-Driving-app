@@ -1,9 +1,17 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity } from "react-native";
-import { Picker } from "@react-native-picker/picker";
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  StyleSheet, 
+  Modal, 
+  FlatList 
+} from "react-native";
 import tw from "twrnc";
 import DatePicker from 'react-native-date-picker';
 import axios from "axios";
+import { MaterialIcons } from '@expo/vector-icons';
 
 interface FormData {
   activity: string;
@@ -25,17 +33,84 @@ interface FormSectionProps {
   setcurrentTime: React.Dispatch<React.SetStateAction<string>>;
 }
 
+const CustomDropdown = ({ 
+  options, 
+  selectedValue, 
+  onSelect, 
+  placeholder,
+  style 
+}: {
+  options: { item: string }[];
+  selectedValue: string;
+  onSelect: (value: string) => void;
+  placeholder: string;
+  style?: any;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <View style={[styles.dropdownContainer, style]}>
+      <TouchableOpacity 
+        style={[styles.dropdownHeader, { height: 44 }]} 
+        onPress={() => setIsOpen(true)}
+      >
+        <Text style={styles.dropdownHeaderText}>
+          {selectedValue || placeholder}
+        </Text>
+        <MaterialIcons name="arrow-drop-down" size={24} color="black" />
+      </TouchableOpacity>
+
+      <Modal
+        visible={isOpen}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsOpen(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setIsOpen(false)}
+        >
+          <View style={styles.modalContent}>
+            <FlatList
+              data={options}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.modalItem}
+                  onPress={() => {
+                    onSelect(item.item);
+                    setIsOpen(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.modalItemText,
+                    selectedValue === item.item && styles.selectedItem
+                  ]}>
+                    {item.item}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              ItemSeparatorComponent={() => <View style={styles.separator} />}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </View>
+  );
+};
+
 const FormSection: React.FC<FormSectionProps> = ({
   formData,
   setFormData,
   activityList,
   setcurrentTime,
-  trucklistandtailorlist = { trucklist: [], trailerlist: [] }, // Fixed default value
+  trucklistandtailorlist = { trucklist: [], trailerlist: [] },
 }) => {
   const [open, setOpen] = useState(false);
   const [time, setTime] = useState(new Date());
-  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]); // Added type
-  const [showsuggestion, setShowsuggestion] = useState(false); // Fixed typo in variable name
+  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+  const [showsuggestion, setShowsuggestion] = useState(false);
 
   const handleSearchLocation = async (query: string) => {
     if (!query) {
@@ -47,14 +122,14 @@ const FormSection: React.FC<FormSectionProps> = ({
         `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&key=AIzaSyARXa6r8AXKRaoeWqyesQNBI8Y3EUEWSnY`
       );
       setLocationSuggestions(response?.data?.results || []);
-      setShowsuggestion(true); // Show suggestions when we get them
+      setShowsuggestion(true);
     } catch (error) {
       console.log(error);
       setLocationSuggestions([]);
     }
   };
 
-  const handleSelectLocation = (suggestion: any) => { // Added type
+  const handleSelectLocation = (suggestion: any) => {
     setFormData({ ...formData, location: suggestion.formatted_address });
     setLocationSuggestions([]);
     setShowsuggestion(false);
@@ -62,39 +137,33 @@ const FormSection: React.FC<FormSectionProps> = ({
 
   return (
     <View style={tw`p-4`}>
-      <View>
-        <View style={tw`flex flex-row items-start justify-between gap-4`}>
-          <Text style={tw`text-gray-700 font-bold text-[14px] mb-1`}>Activity:</Text>
-          <View style={tw`font-bold text-lg border border-gray-300 rounded mb-3 h-[44px] w-[70%]`}>
-            <Picker
-              selectedValue={formData.activity}
-              onValueChange={(value) => setFormData({ ...formData, activity: value })}
-            >
-              {activityList?.map((item, index) => (
-                <Picker.Item key={index} label={item.item} value={item.item} />
-              ))}
-            </Picker>
-          </View>
-        </View>
+      {/* Activity Dropdown */}
+      <View style={tw`flex flex-row items-center justify-between gap-4 mb-3`}>
+        <Text style={tw`text-gray-700 font-bold text-[14px]`}>Activity:</Text>
+        <CustomDropdown
+          options={activityList}
+          selectedValue={formData.activity}
+          onSelect={(value) => setFormData({ ...formData, activity: value })}
+          placeholder="Select Activity"
+          style={tw`w-[70%]`}
+        />
       </View>
 
-      <View style={tw`flex flex-row items-start justify-between gap-4`}>
-        <Text style={tw`text-gray-700 font-bold text-[14px] mb-1`}>Location:</Text>
+      {/* Location Input */}
+      <View style={tw`flex flex-row items-center justify-between gap-4 mb-3`}>
+        <Text style={tw`text-gray-700 font-bold text-[14px]`}>Location:</Text>
         <View style={tw`w-[70%]`}>
           <TextInput
             onChangeText={(text) => {
               setFormData({ ...formData, location: text });
               handleSearchLocation(text);
             }}
-            style={tw`text-[15px] border border-gray-300 px-2 h-[44px] rounded mb-3 w-full`}
+            style={tw`text-[15px] border border-gray-300 px-2 h-[44px] rounded w-full`}
             placeholder="Enter Your Location"
             value={formData.location}
           />
-
-        </View>
-      </View>
           {locationSuggestions.length > 0 && showsuggestion && (
-            <View style={tw`absolute top-[117px] w-full left-4 bg-white border border-gray-300 rounded z-10`}>
+            <View style={tw`absolute top-[44px] left-0 right-0 bg-white border border-gray-300 rounded z-10 mt-1`}>
               {locationSuggestions.map((suggestion, index) => (
                 <TouchableOpacity
                   key={index}
@@ -106,11 +175,17 @@ const FormSection: React.FC<FormSectionProps> = ({
               ))}
             </View>
           )}
+        </View>
+      </View>
 
-      <View style={tw`flex flex-row items-start justify-between gap-4`}>
-        <Text style={tw`text-gray-700 font-bold text-[14px] mb-1`}>Current Time:</Text>
-        <View style={tw`flex-1 border border-gray-300 rounded mb-3 max-w-[70%]`}>
-          <TouchableOpacity onPress={() => setOpen(true)} style={tw`h-[44px] justify-center`}>
+      {/* Current Time */}
+      <View style={tw`flex flex-row items-center justify-between gap-4 mb-3`}>
+        <Text style={tw`text-gray-700 font-bold text-[14px]`}>Current Time:</Text>
+        <View style={tw`flex-1 border border-gray-300 rounded max-w-[70%]`}>
+          <TouchableOpacity 
+            onPress={() => setOpen(true)} 
+            style={tw`h-[44px] justify-center`}
+          >
             <Text style={tw`text-gray-700 text-[15px] px-2`}>
               {time ? time.toLocaleTimeString() : 'Select Time'}
             </Text>
@@ -135,39 +210,33 @@ const FormSection: React.FC<FormSectionProps> = ({
         </View>
       </View>
 
-      <View style={tw`flex flex-row items-start justify-between gap-4`}>
-        <Text style={tw`text-gray-700 font-bold text-[14px] mb-1`}>Choose:</Text>
-        <View style={tw`flex flex-row items-start justify-between gap-4 w-[70%]`}>
-          <View style={tw`font-bold text-lg border border-gray-300 rounded mb-3 flex-1`}>
-            <Picker
-              selectedValue={formData.truck}
-              onValueChange={(value) => setFormData({ ...formData, truck: value })}
-            >
-              <Picker.Item label="Select Truck" value="" />
-              {trucklistandtailorlist?.trucklist?.map((option, index) => (
-                <Picker.Item key={index} label={option.item} value={option.item} />
-              ))}
-            </Picker>
-          </View>
+      {/* Truck and Trailer Dropdowns */}
+      <View style={tw`flex flex-row items-center justify-between gap-4 mb-3`}>
+        <Text style={tw`text-gray-700 font-bold text-[14px]`}>Choose:</Text>
+        <View style={tw`flex flex-row items-center justify-between gap-4 w-[70%]`}>
+          <CustomDropdown
+            options={trucklistandtailorlist.trucklist}
+            selectedValue={formData.truck}
+            onSelect={(value) => setFormData({ ...formData, truck: value })}
+            placeholder="Select Truck"
+            style={tw`flex-1`}
+          />
 
-          <View style={tw`font-bold text-lg border border-gray-300    rounded mb-3 flex-1`}>
-            <Picker
-              selectedValue={formData.trailer}
-              onValueChange={(value) => setFormData({ ...formData, trailer: value })}
-            >
-              <Picker.Item label="Select Trailer" value="" />
-              {trucklistandtailorlist?.trailerlist?.map((option, index) => (
-                <Picker.Item key={index} label={option.item} value={option.item} />
-              ))}
-            </Picker>
-          </View>
+          <CustomDropdown
+            options={trucklistandtailorlist.trailerlist}
+            selectedValue={formData.trailer}
+            onSelect={(value) => setFormData({ ...formData, trailer: value })}
+            placeholder="Select Trailer"
+            style={tw`flex-1`}
+          />
         </View>
       </View>
 
-      <View style={tw`flex flex-row items-start justify-between gap-4`}>
-        <Text style={tw`text-gray-700 font-bold text-[14px] mb-1`}>Odometer:</Text>
+      {/* Odometer Input */}
+      <View style={tw`flex flex-row items-center justify-between gap-4`}>
+        <Text style={tw`text-gray-700 font-bold text-[14px]`}>Odometer:</Text>
         <TextInput
-          style={tw`text-[15px] border border-gray-300 px-2 h-[44px] rounded mb-3 w-[70%]`}
+          style={tw`text-[15px] border border-gray-300 px-2 h-[44px] rounded w-[70%]`}
           placeholder="Enter Odometer Reading"
           value={formData.odometer}
           onChangeText={(text) => setFormData({ ...formData, odometer: text })}
@@ -177,5 +246,61 @@ const FormSection: React.FC<FormSectionProps> = ({
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  dropdownContainer: {
+    position: 'relative',
+    zIndex: 1,
+  },
+  dropdownHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 4,
+    paddingHorizontal: 12,
+    backgroundColor: 'white',
+  },
+  dropdownHeaderText: {
+    fontSize: 15,
+    color: '#374151',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    maxHeight: '60%',
+    backgroundColor: 'white',
+    borderRadius: 8,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  modalItemText: {
+    fontSize: 16,
+    color: '#374151',
+  },
+  selectedItem: {
+    color: '#2563eb',
+    fontWeight: '600',
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#f3f4f6',
+    marginHorizontal: 8,
+  },
+});
 
 export default FormSection;

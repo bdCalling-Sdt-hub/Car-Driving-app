@@ -288,7 +288,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
 
 
 
-  console.log('tripdetails', tripdetails);
+  console.log('acvity++++++++++++', activity);
   return (
     <SafeAreaView style={tw`flex-1 bg-white`}>
       <StatusBar barStyle="light-content" />
@@ -297,7 +297,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
       <ScrollView style={tw`flex-1`}>
         <View style={tw`flex-row justify-between items-center p-4 bg-gray-100 border-b border-gray-300`}>
           <Text style={tw`text-xl font-bold text-gray-800`}>Add Trip Activity</Text>
-          {/* <Text style={tw`text-base text-gray-800`}>{ formatDateTime(time) || currentDate}</Text> */}
+          <Text style={tw`text-lg font-bold text-gray-700 text-center`}>{currentDate}</Text>
         </View>
 
         {/* Form Section */}
@@ -314,17 +314,20 @@ const AddTrip: React.FC<AddTripProps> = () => {
           </View>
 
           <View style={tw`flex-row items-center mb-4`}>
-            <Text style={tw`w-24 text-base font-medium`}>Consignee:</Text>
+            <Text style={tw`w-24 text-base font-medium`}>{activity === 'Pickup' ? 'Shipper' : 'Consignee:'}</Text>
             <TextInput
               style={tw`flex-1 h-11 border border-gray-300 rounded px-2.5`}
               value={consignee}
               onChangeText={setConsignee}
-              placeholder="Dropoff Location "
+              placeholder={`${activity === 'Pickup' ? 'Shipper Location' : 'Dropoff Location'}`}
             />
+
+
+            
           </View>
 
           <View style={tw`flex-row items-center mb-4`}>
-            <Text style={tw`w-24 text-base font-medium`}>Delivery:</Text>
+            <Text style={tw`w-24 text-base font-medium`}>{activity === 'Pickup' ? 'Pickup' : 'Delivery:'}</Text>
             <View style={tw`flex-1 flex flex-row items-center gap-2`}>
               <View style={tw`flex-1 border border-gray-300 rounded  max-w-[70%]`}>
                 <TouchableOpacity onPress={() => setOpen(true)} style={tw`h-[42px] justify-center`}>
@@ -349,7 +352,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
                 />
               </View>
 
-              <TouchableOpacity style={tw`flex-1 max-w-[20%] h-[42px] border border-gray-300 rounded items-center justify-center mr-1`}>
+              <TouchableOpacity style={tw`flex-1 max-w-[18%] h-[42px] border border-gray-300 rounded items-center justify-center mr-1`}>
                 <TextInput
                   style={tw`text-center w-full h-full`}
                   value={quantity}
@@ -384,7 +387,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
 
             </View>
             <TextInput
-              style={tw`h-11 w-full max-w-[62%]  border border-gray-300 rounded px-2.5 mb-4 text-center`}
+              style={tw`h-11 w-full max-w-[75%]  border border-gray-300 rounded px-2.5 mb-4 text-center`}
               placeholder="Receiver Name"
               value={receiverName}
               onChangeText={setReceiverName}
@@ -403,7 +406,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
           style={tw`mx-2 mb-4 flex-1 max-w-[100%] ${matched ? 'bg-gray-400' : 'bg-[#29adf8]'} py-2 rounded-sm`}
           onPress={handleAddTrip}
         >
-          <Text style={tw`text-white text-lg text-center font-bold`}>Add trip acvity</Text>
+          <Text style={tw`text-white text-lg text-center font-bold`}>Add Trip Acvity</Text>
         </TouchableOpacity>
 
 
@@ -418,7 +421,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
 
           <TouchableOpacity
           disabled={matched}
-          style={tw`mx-2 mb-4 flex-1 max-w-[100%] bg-[#f1f0f6]  py-2 rounded-sm`}
+          style={tw` mb-4 flex-1 max-w-[100%] bg-gray-100 border-b border-gray-300 py-2 rounded-sm`}
         
         >
           <Text style={tw` text-lg pl-4 text-gray-700 font-bold `}>Today's Trip Details</Text>
