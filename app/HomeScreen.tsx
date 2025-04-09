@@ -44,6 +44,15 @@ const getCurrentDate = (): string => {
   return `${day} ${month} ${date} ${year}`;
 };
 
+const now = new Date();
+const year = now.getFullYear();
+const month = String(now.getMonth() + 1).padStart(2, '0');
+const day = String(now.getDate()).padStart(2, '0');
+
+
+const customDate = `${year}-${month}-${day}`;
+
+console.log("customDate", customDate);
 const currentDate = getCurrentDate();
 
   
@@ -80,7 +89,7 @@ const currentDate = getCurrentDate();
       status: 200,
       start: [
         {
-          timestamp: formData.currentTime,
+          timestamp: customDate + " " + formData.currentTime,
           location: formData.location,
           odometer: formData.odometer,
           truck: formData.truck,
@@ -88,6 +97,9 @@ const currentDate = getCurrentDate();
         },
       ],
     };
+
+    console.log("Trip Dataaaaaa", tripData);
+    console.log("timestamp", currentDate + " " + formData.currentTime);
 
     try {
       setLoading(true);
@@ -106,6 +118,7 @@ const currentDate = getCurrentDate();
           trailer: "",
           odometer: "",
         });
+         setCurrentTime("");
         Alert.alert("Success", "Trip started successfully!");
         navigation.navigate("AddTrip");
 
@@ -157,7 +170,7 @@ const currentDate = getCurrentDate();
         setFormData={setFormData}
         setcurrentTime={setCurrentTime}
         currentTime={currentTime}
-        activityList={data?.data?.activitylist || []}
+        activityList={data?.data?.primarylist || []}
         trucklistandtailorlist={truckandTailordata?.data || []}
       />
 
@@ -177,9 +190,6 @@ const currentDate = getCurrentDate();
         </View>
       )}
 
-      <Text style={tw`text-center bg-[#f1f0f6] p-3 font-bold text-lg`}>
-        Today's Trip Details
-      </Text>
     </View>
   );
 };

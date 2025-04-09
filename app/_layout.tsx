@@ -1,6 +1,6 @@
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Drawer } from "expo-router/drawer";
-import { Text, View, TouchableOpacity, Image, Alert } from "react-native";
+import { Text, View, TouchableOpacity, Image, Alert, Linking } from "react-native";
 import tw from "@/assets/lib/tailwind";
 import Header from "./components/Header";
 import { Ionicons } from "@expo/vector-icons";
@@ -113,8 +113,19 @@ const CustomSidebar = () => {
       </View>
     );
   }
-
-
+  const openLink = async () => {
+    try {
+      const supported = await Linking.canOpenURL('https://simplydispatch.ca/help.php');
+      
+      if (supported) {
+        await Linking.openURL('https://simplydispatch.ca/help.php');
+      } else {
+        console.log("Don't know how to open this URL");
+      }
+    } catch (error) {
+      console.error('An error occurred', error);
+    }
+  };
   
   return (
     <View style={tw`h-full flex-1 bg-[#29adf8] p-5`}>
@@ -146,7 +157,7 @@ const CustomSidebar = () => {
         onPress={() => navigation.navigate('AddTrip')}
         style={tw`p-4`}
       >
-        <Text style={tw`text-white text-xl font-semibold border-b-2 pb-2 border-white`}>Add Trip Acvity</Text>
+        <Text style={tw`text-white text-xl font-semibold border-b-2 pb-2 border-white`}>Trip Activites</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -157,7 +168,7 @@ const CustomSidebar = () => {
       </TouchableOpacity>
       
       <TouchableOpacity
-        // onPress={() => navigation.navigate('https://simplydispatch.ca/help.php')}
+        onPress={openLink}
         style={tw`p-4`}
       >
         <Text style={tw`text-white text-xl font-semibold border-b-2 pb-2 border-white`}>Help & Support</Text>

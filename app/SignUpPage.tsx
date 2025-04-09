@@ -148,6 +148,7 @@ const SignUpPage: React.FC = () => {
         style={tw`border border-gray-300 rounded-lg h-[44px] px-2 mb-4 text-[16px] font-bold text-gray-600`}
         placeholder="Email"
         value={email}
+        autoCapitalize="none"
         onChangeText={setEmail}
         keyboardType="email-address"
       />

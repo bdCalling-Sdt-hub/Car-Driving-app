@@ -78,6 +78,7 @@ const SignInPage: React.FC = () => {
           value={password}
           onChangeText={setPassword}
           secureTextEntry={!passwordVisible}
+          autoCapitalize="none"
         />
         <TouchableOpacity style={tw`p-2`} onPress={() => setPasswordVisible(!passwordVisible)}>
           <Ionicons name={passwordVisible ? "eye" : "eye-off"} size={24} color="gray" />

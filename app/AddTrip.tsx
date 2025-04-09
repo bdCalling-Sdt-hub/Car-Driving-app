@@ -22,6 +22,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useActivityDropDownListQuery, useAddTripAcvityMutation, useOneTripAcvityMutation, useTypeDropDownListQuery } from './redux/features/tripApis/TripApi';
 import { format } from "date-fns";
 import DatePicker from 'react-native-date-picker';
+import axios from 'axios';
 // Define TypeScript interfaces
 interface TripDetailItemProps {
   type: string;
@@ -94,13 +95,19 @@ const TripDetailItem: React.FC<TripDetailItemProps> = ({ type, time, location, n
 
 type AddTripProps = NativeStackScreenProps<RootStackParamList, "AddTrip">;
 const AddTrip: React.FC<AddTripProps> = () => {
+  const formatTime24Hour = (date: Date) => {
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
   const route = useRoute();
   // Form state
-  const [activity, setActivity] = useState<string>('Dropoff/ Delivery');
+  const [activity, setActivity] = useState<string>('');
   const [consignee, setConsignee] = useState<string>('');
   const [deliveryTime, setDeliveryTime] = useState<string>('');
   const [quantity, setQuantity] = useState<string>('');
-  const [type, setType] = useState<string>('Select Type');
+  const [type, setType] = useState<string>('');
   const [receiverName, setReceiverName] = useState<string>('');
   const [note, setNote] = useState<string>('');
   const [startedTrip, setStartedTrip] = useState(null);
@@ -154,7 +161,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
   }, [Navigation, isFocused]);
 
 
-  console.log('dtls-----------', tripdetails);
+  
 
   const [trips, setTrips] = useState<Trip[]>([]);
 
@@ -184,7 +191,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
   // Get current time in the format "8:00 AM"
 
   const [open, setOpen] = useState(false);
-  const [time, setTime] = useState(new Date());
+  const [time, setTime] = useState(null);
 
 
 
@@ -227,7 +234,13 @@ const AddTrip: React.FC<AddTripProps> = () => {
   // console.log('typeDataList', typeDataList);
 
   const matched = tripdetails?.TripNumber === startedTrip?.TripNumber;
-
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  
+  
+  const customDate = `${year}-${month}-${day}`;
 
   console.log('matched', matched);
   console.log('matched', tripdetails?.TripNumber === startedTrip?.TripNumber);
@@ -242,7 +255,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
         {
           activity,
           location: consignee,
-          timestamp: deliveryTime,
+          timestamp: customDate + " " +  deliveryTime,
           quantity,
           type,
           partyname: receiverName,
@@ -258,7 +271,8 @@ const AddTrip: React.FC<AddTripProps> = () => {
       console.log("API Response:", response);
       setTripAcvitys(response?.data);
       if (response?.data?.code === 'success') {
-        Alert.alert("Trip Added", "Trip Added Successfully");
+        
+        Alert.alert("Trip Activity Added", "Trip Activity Added Successfully");
       }
     } catch (error) {
       console.error("Error adding trip:", error);
@@ -286,9 +300,33 @@ const AddTrip: React.FC<AddTripProps> = () => {
   const timeOptions = generateTimeOptions();
 
 
+  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+  const [showsuggestion, setShowsuggestion] = useState(false);
 
+  const handleSearchLocation = async (query: string) => {
+    if (!query) {
+      setLocationSuggestions([]);
+      return;
+    }
+    try {
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&key=AIzaSyARXa6r8AXKRaoeWqyesQNBI8Y3EUEWSnY`
+      );
+      setLocationSuggestions(response?.data?.results || []);
+      setShowsuggestion(true);
+    } catch (error) {
+      console.log(error);
+      setLocationSuggestions([]);
+    }
+  };
 
-  console.log('acvity++++++++++++', activity);
+  const handleSelectLocation = (suggestion: any) => {
+    setConsignee(suggestion.formatted_address);
+    setLocationSuggestions([]);
+    setShowsuggestion(false);
+  };
+
+  console.log('acvity++++++++++++', acvityData[0]?.item);
   return (
     <SafeAreaView style={tw`flex-1 bg-white`}>
       <StatusBar barStyle="light-content" />
@@ -308,7 +346,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
               style={tw`flex-1 h-11 border border-gray-300 rounded px-2.5 flex-row items-center justify-between`}
               onPress={() => setShowActivityModal(true)}
             >
-              <Text>{activity}</Text>
+              <Text>{activity || acvityData[0]?.item }</Text>
               <MaterialIcons name="arrow-drop-down" size={24} color="black" />
             </TouchableOpacity>
           </View>
@@ -318,12 +356,29 @@ const AddTrip: React.FC<AddTripProps> = () => {
             <TextInput
               style={tw`flex-1 h-11 border border-gray-300 rounded px-2.5`}
               value={consignee}
-              onChangeText={setConsignee}
+              onChangeText={(text) => {
+                setConsignee(text);
+                handleSearchLocation(text);
+              }}
               placeholder={`${activity === 'Pickup' ? 'Shipper Location' : 'Dropoff Location'}`}
             />
 
+            {locationSuggestions.length > 0 && showsuggestion && (
+              <View style={tw`absolute top-[44px] left-0 right-0 bg-white border border-gray-300 rounded z-10 mt-1`}>
+                {locationSuggestions.map((suggestion, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => handleSelectLocation(suggestion)}
+                    style={tw`p-2 border-b border-gray-300`}
+                  >
+                    <Text>{suggestion.formatted_address}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
 
-            
+
+
           </View>
 
           <View style={tw`flex-row items-center mb-4`}>
@@ -332,24 +387,25 @@ const AddTrip: React.FC<AddTripProps> = () => {
               <View style={tw`flex-1 border border-gray-300 rounded  max-w-[70%]`}>
                 <TouchableOpacity onPress={() => setOpen(true)} style={tw`h-[42px] justify-center`}>
                   <Text style={tw`text-gray-700 text-[15px]  px-2 pl-3`}>
-                    {time ? time.toLocaleTimeString() : 'Select Time'}
+                  {time ? formatTime24Hour(time) : 'Select Time'}
                   </Text>
                 </TouchableOpacity>
-
                 <DatePicker
-                  modal
-                  mode="time"
-                  open={open}
-                  date={time}
-                  onConfirm={(time) => {
-                    setOpen(false);
-                    setDeliveryTime(time.toLocaleTimeString());
-                    setTime(time);
-                  }}
-                  onCancel={() => {
-                    setOpen(false);
-                  }}
-                />
+              modal
+              mode="time"
+              open={open}
+              date={time || new Date()}
+              onConfirm={(selectedTime) => {
+                setOpen(false);
+                setDeliveryTime(formatTime24Hour(selectedTime));
+                setTime(selectedTime);
+              }}
+              onCancel={() => {
+                setOpen(false);
+              }}
+              is24hourSource="locale" // Force 24-hour format
+              locale="en_GB" // British English locale for 24-hour format
+            />
               </View>
 
               <TouchableOpacity style={tw`flex-1 max-w-[18%] h-[42px] border border-gray-300 rounded items-center justify-center mr-1`}>
@@ -366,7 +422,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
                 style={tw`flex-1 max-w-[35%] h-[42px] border border-gray-300 rounded px-2.5 mr-1 flex-row items-center justify-between`}
                 onPress={() => setShowTypeModal(true)}
               >
-                <Text>{type}</Text>
+                <Text>{type || typeDataList[0]?.item}</Text>
                 <MaterialIcons name="arrow-drop-down" size={24} color="black" />
               </TouchableOpacity>
 
@@ -375,7 +431,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
           </View>
 
           <View style={tw`flex flex-row items-center gap-2 justify-end`}>
-         
+
             <View style={tw`flex-1 max-w-[10%] pb-4`}>
 
               <TouchableOpacity
@@ -420,24 +476,24 @@ const AddTrip: React.FC<AddTripProps> = () => {
           {/* <Text style={tw` bg-[#f1f0f6] p-2 mb-4 text-center  font-bold text-lg`}>Today's Trip Details</Text> */}
 
           <TouchableOpacity
-          disabled={matched}
-          style={tw` mb-4 flex-1 max-w-[100%] bg-gray-100 border-b border-gray-300 py-2 rounded-sm`}
-        
-        >
-          <Text style={tw` text-lg pl-4 text-gray-700 font-bold `}>Today's Trip Details</Text>
-        </TouchableOpacity>
-          <View style={tw`p-4`}>
+            disabled={matched}
+            style={tw` mb-4 flex-1 max-w-[100%] bg-gray-100 border-b border-gray-300 py-2 rounded-sm`}
+
+          >
+            <Text style={tw` text-lg pl-4 text-gray-700 font-bold `}>Today's Trip Details</Text>
+          </TouchableOpacity>
+          <View style={tw`px-4`}>
             <View style={tw`h-[100%] absolute right-2 border border-dashed border-gray-400 w-[2px] mr-2`} />
-            <View style={tw`flex-row items-center absolute -right-1 pr-2 -top-2`}>
+            <View style={tw`flex-row items-center absolute -right-1 pr-2 -top-0`}>
               <FontAwesome
                 name="circle"
-                style={tw`border border-gray-300 py-1 px-[5px] rounded-full`}
+                style={tw`border border-gray-300 py-1 px-[5px] rounded-full text-green-500`}
                 size={18}
-                color={"green"}
+                // color={"green"}
               />
             </View>
             <Text style={tw`text-base font-semibold`}>Start</Text>
-            <Text style={tw`text-xs text-gray-500`}>start time: {startedTrip?.start?.timestamp}</Text>
+            <Text style={tw`text-xs text-gray-500`}>Start Time: {startedTrip?.start?.timestamp}</Text>
             <Text style={tw`text-xs text-gray-500`}>End Time: {startedTrip?.start?.maxactivitytimelimit}</Text>
             <Text style={tw`text-sm text-gray-600`}>Location: {startedTrip?.start?.location}</Text>
 
@@ -489,20 +545,20 @@ const AddTrip: React.FC<AddTripProps> = () => {
                 : "N/A";
               return (
 
-                <View key={index} style={tw`p-4`}>
+                <View key={index} style={tw`px-4`}>
                   <View style={tw`h-[100%] absolute right-2  border border-dashed border-gray-400  mr-2`} />
 
-                  <View style={tw`flex-row items-center absolute -right-1 pr-2 -top-2`}>
+                  <View style={tw`flex-row items-center absolute -right-1 pr-2 top-3`}>
                     <FontAwesome
                       name="circle"
-                      style={tw`border border-gray-300 py-1 px-[5px] rounded-full`}
+                      style={tw`border border-gray-300 py-1 px-[5px] rounded-full ${item.activity === "Pickup" ? "text-[#29adf8]" : "text-yellow-500"}`}
                       size={18}
-                      color={item.activity === "Pickup" ? "blue" : "green"}
+                      // color={item.activity === "Pickup" ? "blue" : "green"}
                     />
                   </View>
 
                   {/* Activity Name */}
-                  <Text style={tw`text-base font-semibold`}>{item.activity}</Text>
+                  <Text style={tw`text-base font-semibold mt-4`}>{item.activity}</Text>
 
                   {/* Formatted Timestamp */}
                   <Text style={tw`text-xs text-gray-500`}>{formattedTime}</Text>
@@ -522,10 +578,10 @@ const AddTrip: React.FC<AddTripProps> = () => {
 
           {
             matched && (
-              <View style={tw`p-4`}>
-                <View style={tw`h-[100%] absolute right-2 border border-dashed border-gray-400 mr-2`} />
+              <View style={tw`px-4`}>
+                <View style={tw`h-[100%] absolute right-2  mr-2`} />
 
-                <View style={tw`flex-row items-center absolute -right-1 pr-2 -top-2`}>
+                <View style={tw`flex-row items-center absolute -right-1 pr-2  top-0`}>
                   <FontAwesome
                     name="circle"
                     style={tw`border border-gray-300 py-1 px-[5px] rounded-full`}
@@ -535,7 +591,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
                 </View>
 
                 {/* Activity Name */}
-                <Text style={tw`text-base font-semibold text-[#ff0000]`}>Finish</Text>
+                <Text style={tw`text-base font-semibold text-[#ff0000] mt-2`}>Finish</Text>
 
                 {/* Formatted Timestamp */}
                 <Text style={tw`text-xs text-gray-500`}>finish time: {tripdetails?.finish?.timestamp}</Text>
@@ -618,7 +674,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
       >
         <View style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}>
           <View style={tw`bg-white rounded-lg w-80 p-4`}>
-            <Text style={tw`text-lg font-bold mb-4 text-center`}>Select Type</Text>
+            <Text style={tw`text-lg font-bold mb-4 text-center`}> Type</Text>
             {typeDataList.map((option) => (
               <TouchableOpacity
                 key={option.item}

@@ -25,7 +25,7 @@ const formattedDate = currentDate.toLocaleDateString('en-US', {
 const DateSection = () => (
   <View style={tw`flex-row justify-between p-3 bg-[#f1f0f6]`}>
     <Text style={tw`text-lg font-bold text-gray-700`}>Finish Your Day</Text>
-    <Text style={tw`text-lg font-bold text-gray-700`}>{ formattedDate} </Text>
+    <Text style={tw`text-lg font-bold text-gray-700`}>{formattedDate} </Text>
   </View>
 );
 
@@ -41,7 +41,7 @@ const FinishTrip = () => {
     trailer: "",
     odometer: "",
   });
-    const [currentTime, setCurrentTime] = useState('');
+  const [currentTime, setCurrentTime] = useState('');
 
   // Fetch stored API key
   useEffect(() => {
@@ -59,7 +59,13 @@ const FinishTrip = () => {
   }, [navigation]);
 
 
-
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  
+  
+  const customDate = `${year}-${month}-${day}`;
 
 
   // Fetch dropdown lists only when apikey is available
@@ -84,6 +90,8 @@ const FinishTrip = () => {
     fetchTripNumber();
   }, []);
   // Handle form submission
+
+  console.log("tripNumber", tripNumber);
   const handleSubmit = async () => {
     console.log("finish Form Data:", formData);
 
@@ -92,12 +100,13 @@ const FinishTrip = () => {
       return Alert.alert("Error", "Please fill all the fields");
     }
 
+
     const tripData = {
       status: 200,
       TripNumber: tripNumber,
       finish: [
         {
-          timestamp: formData.currentTime,
+          timestamp: customDate + " " + formData.currentTime,
           location: formData.location,
           odometer: formData.odometer,
           truck: formData.truck,
@@ -105,16 +114,24 @@ const FinishTrip = () => {
         },
       ],
     };
-
+    console.log("finish Trip Data:", tripData);
     try {
       setLoading(true);
       const response = await startNewTrip({ apikey, ...tripData }).unwrap();
-      console.log("Trip Response:", response);
+      console.log("finish Trip Response:", response);
 
       if (response?.data?.code === 'invalid') {
         Alert.alert("Login Error", "Invalid email or password.");
       } else if (response?.data?.code === 'success') {
         await AsyncStorage.setItem("finishtrip", JSON.stringify(response?.data));
+        setFormData({
+          activity: "",
+          location: "",
+          currentTime: "",
+          truck: "",
+          trailer: "",
+          odometer: "",
+        });
         Alert.alert("Success", "Trip finished successfully!");
         navigation.navigate("AddTrip");
       } else {
@@ -138,7 +155,7 @@ const FinishTrip = () => {
         setFormData={setFormData}
         setcurrentTime={setCurrentTime}
         currentTime={currentTime}
-        activityList={data?.data?.activitylist || []}
+        activityList={data?.data?.primarylist || []}
         trucklistandtailorlist={truckandTailordata?.data || []}
       />
 
@@ -158,8 +175,8 @@ const FinishTrip = () => {
         </View>
       )}
 
-    
-    
+
+
     </View>
   );
 };
