@@ -272,6 +272,13 @@ const AddTrip: React.FC<AddTripProps> = () => {
       setTripAcvitys(response?.data);
       if (response?.data?.code === 'success') {
         
+        setActivity('');
+        setConsignee('');
+        setDeliveryTime('');
+        setQuantity('');
+        setType('');
+        setReceiverName('');
+        setNote('');
         Alert.alert("Trip Activity Added", "Trip Activity Added Successfully");
       }
     } catch (error) {
