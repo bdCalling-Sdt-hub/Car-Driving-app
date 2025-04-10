@@ -159,6 +159,12 @@ const CustomSidebar = () => {
       >
         <Text style={tw`text-white text-xl font-semibold border-b-2 pb-2 border-white`}>Trip Activites</Text>
       </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => navigation.navigate('waitingtime')}
+        style={tw`p-4`}
+      >
+        <Text style={tw`text-white text-xl font-semibold border-b-2 pb-2 border-white`}>Waiting Time</Text>
+      </TouchableOpacity>
 
       <TouchableOpacity
         onPress={handleChangePassword}
@@ -199,6 +205,7 @@ export default function RootLayout() {
           {/* Drawer Screens */}
           <Drawer.Screen name="index" options={{ drawerLabel: "Home", title: "Home", headerShown: false }} />
           <Drawer.Screen name="AddTrip" options={{ headerShown: false }} />
+          <Drawer.Screen name="waitingtime" options={{ headerShown: false }} />
           <Drawer.Screen name="CreateNewPassword" options={{ headerShown: false, title: "Change Password" }} />
         </Drawer>
       </GestureHandlerRootView>
