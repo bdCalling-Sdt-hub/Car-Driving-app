@@ -8,7 +8,6 @@ import FormSection from './components/FormSection';
 import { useActivityDropDownListQuery, useStartNewTripMutation, useTrucksandtailorsQuery } from './redux/features/tripApis/TripApi';
 import { Stack } from 'expo-router';
 
-
 // Define the navigation types
 type RootStackParamList = {
   SignInPage: undefined;
@@ -29,32 +28,25 @@ const HomeScreen = () => {
     odometer: "",
   });
 
-console.log('currenrt time', currentTime);
+  const getCurrentDate = (): string => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-const getCurrentDate = (): string => {
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const now = new Date();
+    const day = days[now.getDay()];
+    const month = months[now.getMonth()];
+    const date = now.getDate();
+    const year = now.getFullYear();
+
+    return `${day} ${month} ${date} ${year}`;
+  };
 
   const now = new Date();
-  const day = days[now.getDay()];
-  const month = months[now.getMonth()];
-  const date = now.getDate();
   const year = now.getFullYear();
-
-  return `${day} ${month} ${date} ${year}`;
-};
-
-const now = new Date();
-const year = now.getFullYear();
-const month = String(now.getMonth() + 1).padStart(2, '0');
-const day = String(now.getDate()).padStart(2, '0');
-
-
-const customDate = `${year}-${month}-${day}`;
-
-console.log("customDate", customDate);
-const currentDate = getCurrentDate();
-
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const customDate = `${year}-${month}-${day}`;
+  const currentDate = getCurrentDate();
   
   // Fetch stored API key
   useEffect(() => {
@@ -78,10 +70,17 @@ const currentDate = getCurrentDate();
 
   // Handle form submission
   const handleSubmit = async () => {
-    console.log("Form Data:", formData);
+    // Combine the form data with the currentTime state
+    const completeFormData = {
+      ...formData,
+      currentTime: currentTime // Ensure currentTime is included
+    };
+
+    console.log("Form Data:", completeFormData);
 
     // Check if all required fields are filled
-    if (!formData.activity || !formData.location || !formData.currentTime || !formData.truck || !formData.trailer || !formData.odometer) {
+    if (!completeFormData.activity || !completeFormData.location || !completeFormData.currentTime || 
+        !completeFormData.truck || !completeFormData.trailer || !completeFormData.odometer) {
       return Alert.alert("Error", "Please fill all the fields");
     }
 
@@ -89,17 +88,14 @@ const currentDate = getCurrentDate();
       status: 200,
       start: [
         {
-          timestamp: customDate + " " + formData.currentTime,
-          location: formData.location,
-          odometer: formData.odometer,
-          truck: formData.truck,
-          trailer: formData.trailer,
+          timestamp: customDate + " " + completeFormData.currentTime,
+          location: completeFormData.location,
+          odometer: completeFormData.odometer,
+          truck: completeFormData.truck,
+          trailer: completeFormData.trailer,
         },
       ],
     };
-
-    console.log("Trip Dataaaaaa", tripData);
-    console.log("timestamp", currentDate + " " + formData.currentTime);
 
     try {
       setLoading(true);
@@ -110,6 +106,7 @@ const currentDate = getCurrentDate();
         Alert.alert("Login Error", "Invalid email or password.");
       } else if (response?.data?.code === 'success') {
         await AsyncStorage.setItem("startedTrip", JSON.stringify(response?.data));
+        // Reset all form fields including currentTime
         setFormData({
           activity: "",
           location: "",
@@ -118,14 +115,10 @@ const currentDate = getCurrentDate();
           trailer: "",
           odometer: "",
         });
-         setCurrentTime("");
+        setCurrentTime(""); // Clear the currentTime state
+        
         Alert.alert("Success", "Trip started successfully!");
         navigation.navigate("AddTrip");
-
-
-
-
-
       } else {
         Alert.alert("Error", "Unexpected response from the server.");
       }
@@ -135,11 +128,7 @@ const currentDate = getCurrentDate();
     } finally {
       setLoading(false);
     }
-
-
-    
   };
-
 
   return (
     <View style={tw`flex-1 bg-white`}>
@@ -148,22 +137,9 @@ const currentDate = getCurrentDate();
       <View style={tw`flex-row justify-between p-3 bg-[#f1f0f6]`}>
         <Text style={tw`text-lg font-bold text-gray-700`}>Start Your Day</Text>
         <Text style={tw`text-lg font-bold text-gray-700 text-center`}>
-          {/* {
-        
-           currentTime && currentTime || new Date().toLocaleDateString('en-US', {
-            weekday: 'long', 
-            month: 'long',   
-            day: 'numeric',  
-            year: 'numeric', 
-          })} */}
-          {
-            currentDate
-          }
+          {currentDate}
         </Text>
-
       </View>
-
-      {/* Display current time */}
 
       <FormSection
         formData={formData}
@@ -178,8 +154,11 @@ const currentDate = getCurrentDate();
         <TouchableOpacity
           style={tw`bg-[#29adf8] p-3 mb-4 rounded w-[100%]`}
           onPress={handleSubmit}
+          disabled={loading}
         >
-          <Text style={tw`text-white text-center font-bold text-lg`}>Start Trip</Text>
+          <Text style={tw`text-white text-center font-bold text-lg`}>
+            {loading ? 'Starting...' : 'Start Trip'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -189,7 +168,6 @@ const currentDate = getCurrentDate();
           <ActivityIndicator size="large" color="#fff" />
         </View>
       )}
-
     </View>
   );
 };

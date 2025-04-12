@@ -9,7 +9,7 @@ import { Stack } from "expo-router";
 
 // Type for navigation
 type RootStackParamList = {
-  HomeScreen: undefined;
+  AddTrip: undefined;
 };
 
 const SignInPage: React.FC = () => {
@@ -26,8 +26,8 @@ const SignInPage: React.FC = () => {
     const checkToken = async () => {
       const token = await AsyncStorage.getItem('token');
       if (token) {
-        // If token exists, navigate to HomeScreen
-        navigation.navigate('HomeScreen');
+        // If token exists, navigate to AddTrip
+        navigation.navigate('AddTrip');
       }
     };
 
@@ -51,7 +51,7 @@ const SignInPage: React.FC = () => {
       AsyncStorage.setItem("token", response?.data?.apikey);
       AsyncStorage.setItem("user", JSON.stringify(response?.data));
       // alert("Sign In Success");
-      navigation.navigate("HomeScreen");
+      navigation.navigate("AddTrip");
     }
 
   };

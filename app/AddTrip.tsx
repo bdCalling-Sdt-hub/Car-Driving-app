@@ -161,7 +161,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
   }, [Navigation, isFocused]);
 
 
-  
+
 
   const [trips, setTrips] = useState<Trip[]>([]);
 
@@ -238,16 +238,22 @@ const AddTrip: React.FC<AddTripProps> = () => {
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
-  
-  
+
+
   const customDate = `${year}-${month}-${day}`;
 
   console.log('matched', matched);
+
+
+if(matched){
+  Navigation.navigate('HomeScreen');
+}
+
+
+
   console.log('matched', tripdetails?.TripNumber === startedTrip?.TripNumber);
   // Handle form submission
   const handleAddTrip = async () => {
-
-
     const tripData = {
       status: 200,
       TripNumber: startedTrip?.TripNumber,
@@ -255,7 +261,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
         {
           activity,
           location: consignee,
-          timestamp: customDate + " " +  deliveryTime,
+          timestamp: customDate + " " + deliveryTime,
           quantity,
           type,
           partyname: receiverName,
@@ -271,7 +277,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
       console.log("API Response:", response);
       setTripAcvitys(response?.data);
       if (response?.data?.code === 'success') {
-        
+
         setActivity('');
         setConsignee('');
         setDeliveryTime('');
@@ -279,6 +285,8 @@ const AddTrip: React.FC<AddTripProps> = () => {
         setType('');
         setReceiverName('');
         setNote('');
+        setTime(null);
+         
         Alert.alert("Trip Activity Added", "Trip Activity Added Successfully");
       }
     } catch (error) {
@@ -317,7 +325,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
     }
     try {
       const response = await axios.get(
-        `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&key=AIzaSyARXa6r8AXKRaoeWqyesQNBI8Y3EUEWSnY`
+        `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&key=AIzaSyAfW5xjLmNIkot1I438jq0C9cezbx6_uNQ`
       );
       setLocationSuggestions(response?.data?.results || []);
       setShowsuggestion(true);
@@ -353,12 +361,12 @@ const AddTrip: React.FC<AddTripProps> = () => {
               style={tw`flex-1 h-11 border border-gray-300 rounded px-2.5 flex-row items-center justify-between`}
               onPress={() => setShowActivityModal(true)}
             >
-              <Text>{activity || acvityData[0]?.item }</Text>
+              <Text>{activity || acvityData[0]?.item}</Text>
               <MaterialIcons name="arrow-drop-down" size={24} color="black" />
             </TouchableOpacity>
           </View>
 
-          <View style={tw`flex-row items-center mb-4`}>
+          <View style={tw`flex-row items-center mb-4 w-[100%] relative`}>
             <Text style={tw`w-24 text-base font-medium`}>{activity === 'Pickup' ? 'Shipper' : 'Consignee:'}</Text>
             <TextInput
               style={tw`flex-1 h-11 border border-gray-300 rounded px-2.5`}
@@ -371,7 +379,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
             />
 
             {locationSuggestions.length > 0 && showsuggestion && (
-              <View style={tw`absolute top-[44px] left-0 right-0 bg-white border border-gray-300 rounded z-10 mt-1`}>
+              <View style={tw`absolute w-[100%]  top-[44px] left-0 right-0 bg-white border border-gray-300 rounded z-10 mt-1`}>
                 {locationSuggestions.map((suggestion, index) => (
                   <TouchableOpacity
                     key={index}
@@ -394,25 +402,25 @@ const AddTrip: React.FC<AddTripProps> = () => {
               <View style={tw`flex-1 border border-gray-300 rounded  max-w-[70%]`}>
                 <TouchableOpacity onPress={() => setOpen(true)} style={tw`h-[42px] justify-center`}>
                   <Text style={tw`text-gray-700 text-[15px]  px-2 pl-3`}>
-                  {time ? formatTime24Hour(time) : 'Select Time'}
+                    {time ? formatTime24Hour(time) : 'Select Time'}
                   </Text>
                 </TouchableOpacity>
                 <DatePicker
-              modal
-              mode="time"
-              open={open}
-              date={time || new Date()}
-              onConfirm={(selectedTime) => {
-                setOpen(false);
-                setDeliveryTime(formatTime24Hour(selectedTime));
-                setTime(selectedTime);
-              }}
-              onCancel={() => {
-                setOpen(false);
-              }}
-              is24hourSource="locale" // Force 24-hour format
-              locale="en_GB" // British English locale for 24-hour format
-            />
+                  modal
+                  mode="time"
+                  open={open}
+                  date={time || new Date()}
+                  onConfirm={(selectedTime) => {
+                    setOpen(false);
+                    setDeliveryTime(formatTime24Hour(selectedTime));
+                    setTime(selectedTime);
+                  }}
+                  onCancel={() => {
+                    setOpen(false);
+                  }}
+                  is24hourSource="locale" // Force 24-hour format
+                  locale="en_GB" // British English locale for 24-hour format
+                />
               </View>
 
               <TouchableOpacity style={tw`flex-1 max-w-[18%] h-[42px] border border-gray-300 rounded items-center justify-center mr-1`}>
@@ -469,7 +477,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
           style={tw`mx-2 mb-4 flex-1 max-w-[100%] ${matched ? 'bg-gray-400' : 'bg-[#29adf8]'} py-2 rounded-sm`}
           onPress={handleAddTrip}
         >
-          <Text style={tw`text-white text-lg text-center font-bold`}>Add Trip Acvity</Text>
+          <Text style={tw`text-white text-lg text-center font-bold`}>Add Trip Activity</Text>
         </TouchableOpacity>
 
 
@@ -496,7 +504,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
                 name="circle"
                 style={tw`border border-gray-300 py-1 px-[5px] rounded-full text-green-500`}
                 size={18}
-                // color={"green"}
+              // color={"green"}
               />
             </View>
             <Text style={tw`text-base font-semibold`}>Start</Text>
@@ -560,7 +568,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
                       name="circle"
                       style={tw`border border-gray-300 py-1 px-[5px] rounded-full ${item.activity === "Pickup" ? "text-[#29adf8]" : "text-yellow-500"}`}
                       size={18}
-                      // color={item.activity === "Pickup" ? "blue" : "green"}
+                    // color={item.activity === "Pickup" ? "blue" : "green"}
                     />
                   </View>
 

@@ -248,8 +248,28 @@ const waitingtime: React.FC<AddTripProps> = () => {
   console.log('matched', tripdetails?.TripNumber === startedTrip?.TripNumber);
   // Handle form submission
   const handleAddTrip = async () => {
-
-
+    if (!time || !ToTime) {
+      Alert.alert("Error", "Please select both From and To times");
+      return;
+    }
+  
+    // Format the dates to "YYYY-MM-DD HH:MM:SS"
+    const formatDateTime = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    };
+  
+    const timestampfrom = formatDateTime(time);
+    const timestampto = formatDateTime(ToTime);
+  
+    console.log('Time values:', timestampfrom, timestampto);
+  
     const tripData = {
       status: 200,
       TripNumber: startedTrip?.TripNumber,
@@ -257,36 +277,35 @@ const waitingtime: React.FC<AddTripProps> = () => {
         {
           activity,
           location: consignee,
-          timestamp: customDate + " " +  deliveryTime,
-          quantity,
-          type,
+          timestampfrom: timestampfrom,
+          timestampto: timestampto,
           partyname: receiverName,
           notes: note,
         },
       ],
     };
-
+  
     console.log('tripData', tripData);
-
-    try {
-      const response = await AddTripAcvity({ apikey, body: tripData }).unwrap();
-      console.log("API Response:", response);
-      setTripAcvitys(response?.data);
-      if (response?.data?.code === 'success') {
-        
-        setActivity('');
-        setConsignee('');
-        setDeliveryTime('');
-        setQuantity('');
-        setType('');
-        setReceiverName('');
-        setNote('');
-        Alert.alert("Trip Activity Added", "Trip Activity Added Successfully");
+  
+      try {
+        const response = await AddTripAcvity({ apikey, body: tripData }).unwrap();
+        console.log("API Response:", response);
+        setTripAcvitys(response?.data);
+        if (response?.data?.code === 'success') {
+          
+          setActivity('');
+          setConsignee('');
+          setDeliveryTime('');
+          setQuantity('');
+          setType('');
+          setReceiverName('');
+          setNote('');
+          Alert.alert("Trip Activity Added", "Trip Activity Added Successfully");
+        }
+      } catch (error) {
+        console.error("Error adding trip:", error);
       }
-    } catch (error) {
-      console.error("Error adding trip:", error);
-    }
-
+  
   };
 
 
@@ -294,19 +313,9 @@ const waitingtime: React.FC<AddTripProps> = () => {
   const handleAddNote = () => {
     setShowAddNoteModal(false);
   };
-  const generateTimeOptions = () => {
-    const times = [];
-    const hours = 12;
-    for (let i = 0; i < 24; i++) {
-      const hour = i % hours === 0 ? 12 : i % hours;
-      const period = i < 12 ? 'AM' : 'PM';
-      times.push(`${hour}:00 ${period}`);
-      times.push(`${hour}:30 ${period}`);
-    }
-    return times;
-  };
 
-  const timeOptions = generateTimeOptions();
+
+
 
 
   const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
@@ -319,7 +328,7 @@ const waitingtime: React.FC<AddTripProps> = () => {
     }
     try {
       const response = await axios.get(
-        `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&key=AIzaSyARXa6r8AXKRaoeWqyesQNBI8Y3EUEWSnY`
+        `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&key=AIzaSyAfW5xjLmNIkot1I438jq0C9cezbx6_uNQ`
       );
       setLocationSuggestions(response?.data?.results || []);
       setShowsuggestion(true);
@@ -335,7 +344,7 @@ const waitingtime: React.FC<AddTripProps> = () => {
     setShowsuggestion(false);
   };
 
-  console.log('acvity++++++++++++', acvityData[0]?.item);
+
   return (
     <SafeAreaView style={tw`flex-1 bg-white`}>
       <StatusBar barStyle="light-content" />
@@ -343,7 +352,7 @@ const waitingtime: React.FC<AddTripProps> = () => {
 
       <ScrollView style={tw`flex-1`}>
         <View style={tw`flex-row justify-between items-center p-4 bg-gray-100 border-b border-gray-300`}>
-          <Text style={tw`text-xl font-bold text-gray-800`}>Add Waiting Time</Text>
+          <Text style={tw`text-xl font-bold text-gray-800`}>Waiting Time</Text>
           <Text style={tw`text-lg font-bold text-gray-700 text-center`}>{currentDate}</Text>
         </View>
 
@@ -406,7 +415,6 @@ const waitingtime: React.FC<AddTripProps> = () => {
               date={time || new Date()}
               onConfirm={(selectedTime) => {
                 setOpen(false);
-                setDeliveryTime(formatTime24Hour(selectedTime));
                 setTime(selectedTime);
               }}
               onCancel={() => {
@@ -429,7 +437,6 @@ const waitingtime: React.FC<AddTripProps> = () => {
               date={ToTime || new Date()}
               onConfirm={(selectedTime) => {
                 setOpen(false);
-                setDeliveryTime(formatTime24Hour(selectedTime));
                 setToTime(selectedTime);
               }}
               onCancel={() => {
@@ -480,7 +487,7 @@ const waitingtime: React.FC<AddTripProps> = () => {
           style={tw`mx-2 mb-4 flex-1 max-w-[100%] ${matched ? 'bg-gray-400' : 'bg-[#29adf8]'} py-2 rounded-sm`}
           onPress={handleAddTrip}
         >
-          <Text style={tw`text-white text-lg text-center font-bold`}>Add Trip Acvity</Text>
+          <Text style={tw`text-white text-lg text-center font-bold`}>Add Waiting Time</Text>
         </TouchableOpacity>
 
 
@@ -496,10 +503,11 @@ const waitingtime: React.FC<AddTripProps> = () => {
           <TouchableOpacity
             disabled={matched}
             style={tw` mb-4 flex-1 max-w-[100%] bg-gray-100 border-b border-gray-300 py-2 rounded-sm`}
-
           >
             <Text style={tw` text-lg pl-4 text-gray-700 font-bold `}>Today's Trip Details</Text>
           </TouchableOpacity>
+
+
           <View style={tw`px-4`}>
             <View style={tw`h-[100%] absolute right-2 border border-dashed border-gray-400 w-[2px] mr-2`} />
             <View style={tw`flex-row items-center absolute -right-1 pr-2 -top-0`}>
@@ -544,7 +552,7 @@ const waitingtime: React.FC<AddTripProps> = () => {
 
                   {/* Other Details */}
                   <Text style={tw`text-sm text-gray-600`}>Location: {item.location}</Text>
-                  <Text style={tw`text-sm text-gray-600`}>Quantity: {item.qty} {item.Type}</Text>
+                  <Text style={tw`text-sm text-gray-600`}>Waiting for Pickup: {item?.timestampfrom} - {item?.timestampto}</Text>
 
                   {item.notes && (
                     <Text style={tw`text-sm text-gray-500 italic`}>Notes: {item.notes}</Text>
