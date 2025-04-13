@@ -181,7 +181,6 @@ const FormSection: React.FC<FormSectionProps> = ({
             placeholder="Enter Your Location"
             value={formData.location}
           />
-        </View>
           {locationSuggestions.length > 0 && showsuggestion && (
             <View style={tw`absolute top-[44px] left-0 right-0 bg-white border border-gray-300 rounded z-10 mt-1`}>
               {locationSuggestions.map((suggestion, index) => (
@@ -195,6 +194,7 @@ const FormSection: React.FC<FormSectionProps> = ({
               ))}
             </View>
           )}
+        </View>
       </View>
 
       {/* Current Time */}

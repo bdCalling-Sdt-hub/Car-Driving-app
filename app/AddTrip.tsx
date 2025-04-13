@@ -9,7 +9,8 @@ import {
   StatusBar,
   Alert,
   Modal,
-  FlatList
+  FlatList,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons, MaterialIcons, AntDesign, FontAwesome } from '@expo/vector-icons';
 import tw from 'twrnc'; // Import twrnc
@@ -95,6 +96,9 @@ const TripDetailItem: React.FC<TripDetailItemProps> = ({ type, time, location, n
 
 type AddTripProps = NativeStackScreenProps<RootStackParamList, "AddTrip">;
 const AddTrip: React.FC<AddTripProps> = () => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [OneTripAcvity] = useOneTripAcvityMutation();
   const formatTime24Hour = (date: Date) => {
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
@@ -112,7 +116,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
   const [note, setNote] = useState<string>('');
   const [startedTrip, setStartedTrip] = useState(null);
   const [AddTripAcvity] = useAddTripAcvityMutation();
-  const [OneTripAcvity] = useOneTripAcvityMutation();
+
   const [tripdetails, setTripdetails] = useState(null);
   const [apikey, setApikey] = useState<string>('');
   const Navigation = useNavigation();
@@ -211,7 +215,27 @@ const AddTrip: React.FC<AddTripProps> = () => {
     return `${day}, ${dateNum < 10 ? '0' : ''}${dateNum} ${month} ${year} ${hours}:${minutes}`;
   };
 
-  // Add a new location to the current trip
+  useEffect(() => {
+    const fetchTripActivities = async () => {
+      if (!apikey || !startedTrip?.TripNumber) return;
+
+      try {
+        setIsLoading(true);
+        const body = { status: 200, TripNumber: startedTrip.TripNumber };
+        const response = await OneTripAcvity({ apikey, body }).unwrap();
+        setTripAcvitys(response.data || []);
+      } catch (err) {
+        console.error("Trip activities loading error:", err);
+        setError("Failed to load trip activities");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (isFocused) {
+      fetchTripActivities();
+    }
+  }, [isFocused, apikey, startedTrip?.TripNumber]);
 
 
   // Add a finish location to the current trip
@@ -227,7 +251,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
   }, []);
 
   // Fetch dropdown lists
-  const { data, isLoading, isError } = useActivityDropDownListQuery({ apikey });
+  const { data, isLoading: loading, isError } = useActivityDropDownListQuery({ apikey });
   const { data: typeData, isLoading: typeLoading, isError: typeError } = useTypeDropDownListQuery({ apikey });
   const acvityData = data?.data.activitylist || [];
   const typeDataList = typeData?.data.loadtypes || [];
@@ -245,9 +269,9 @@ const AddTrip: React.FC<AddTripProps> = () => {
   console.log('matched', matched);
 
 
-if(matched){
-  Navigation.navigate('HomeScreen');
-}
+  if (matched) {
+    Navigation.navigate('HomeScreen');
+  }
 
 
 
@@ -286,7 +310,7 @@ if(matched){
         setReceiverName('');
         setNote('');
         setTime(null);
-         
+
         Alert.alert("Trip Activity Added", "Trip Activity Added Successfully");
       }
     } catch (error) {
@@ -334,6 +358,7 @@ if(matched){
       setLocationSuggestions([]);
     }
   };
+  console.log(' currentDate', deliveryTime);
 
   const handleSelectLocation = (suggestion: any) => {
     setConsignee(suggestion.formatted_address);
@@ -341,7 +366,28 @@ if(matched){
     setShowsuggestion(false);
   };
 
-  console.log('acvity++++++++++++', acvityData[0]?.item);
+  if (isLoading) {
+    return (
+      <SafeAreaView style={tw`flex-1 justify-center items-center bg-white`}>
+        <ActivityIndicator size="large" color="#29adf8" />
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={tw`flex-1 justify-center items-center bg-white`}>
+        <Text style={tw`text-red-500 text-lg mb-4`}>{error}</Text>
+        <TouchableOpacity
+          style={tw`bg-blue-500 px-4 py-2 rounded`}
+          onPress={() => Navigation.goBack()}
+        >
+          <Text style={tw`text-white`}>Go Back</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={tw`flex-1 bg-white`}>
       <StatusBar barStyle="light-content" />
@@ -368,29 +414,33 @@ if(matched){
 
           <View style={tw`flex-row items-center mb-4 w-[100%] relative`}>
             <Text style={tw`w-24 text-base font-medium`}>{activity === 'Pickup' ? 'Shipper' : 'Consignee:'}</Text>
-            <TextInput
-              style={tw`flex-1 h-11 border border-gray-300 rounded px-2.5`}
-              value={consignee}
-              onChangeText={(text) => {
-                setConsignee(text);
-                handleSearchLocation(text);
-              }}
-              placeholder={`${activity === 'Pickup' ? 'Shipper Location' : 'Dropoff Location'}`}
-            />
 
-            {locationSuggestions.length > 0 && showsuggestion && (
-              <View style={tw`absolute w-[100%]  top-[44px] left-0 right-0 bg-white border border-gray-300 rounded z-10 mt-1`}>
-                {locationSuggestions.map((suggestion, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    onPress={() => handleSelectLocation(suggestion)}
-                    style={tw`p-2 border-b border-gray-300`}
-                  >
-                    <Text>{suggestion.formatted_address}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
+            <View style={tw`flex-1`}>
+
+              <TextInput
+                style={tw`flex-1 h-11 border border-gray-300 rounded px-2.5`}
+                value={consignee}
+                onChangeText={(text) => {
+                  setConsignee(text);
+                  handleSearchLocation(text);
+                }}
+                placeholder={`${activity === 'Pickup' ? 'Shipper Location' : 'Dropoff Location'}`}
+              />
+
+              {locationSuggestions.length > 0 && showsuggestion && (
+                <View style={tw`absolute w-[100%] justify-end  top-[44px]  bg-white border border-gray-300 rounded z-10 mt-1`}>
+                  {locationSuggestions.map((suggestion, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      onPress={() => handleSelectLocation(suggestion)}
+                      style={tw`p-2 border-b border-gray-300`}
+                    >
+                      <Text>{suggestion.formatted_address}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
 
 
 
@@ -514,50 +564,12 @@ if(matched){
 
           </View>
 
-          {/* <FlatList
-            data={tripAcvitys?.activities}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => {
 
-
-
-              return (
-                <View style={tw`p-4`}>
-                  <View style={tw`h-[100%] absolute right-2 bg-gray-300 w-[2px] mr-2`} />
-
-                  <View style={tw`flex-row items-center absolute -right-1 pr-2 -top-2`}>
-                    <FontAwesome
-                      name="circle"
-                      style={tw`border border-gray-300 py-1 px-[5px] rounded-full`}
-                      size={18}
-                      color={item.activity === "Pickup" ? "blue" : "green"}
-                    />
-                  </View>
-
-    
-                  <Text style={tw`text-base font-semibold`}>{item.activity}</Text>
-
-        
-                  <Text style={tw`text-xs text-gray-500`}>{formattedTime}</Text>
-
-      
-                  <Text style={tw`text-sm text-gray-600`}>Location: {item.location}</Text>
-                  <Text style={tw`text-sm text-gray-600`}>Quantity: {item.qty} {item.Type}</Text>
-
-                  {item.notes && (
-                    <Text style={tw`text-sm text-gray-500 italic`}>Notes: {item.notes}</Text>
-                  )}
-                </View>
-              );
-            }}
-          /> */}
 
 
           {
             tripAcvitys?.activities?.map((item, index) => {
-              const formattedTime = item.timestamp
-                ? format(new Date(item.timestamp), "dd MMM yyyy, hh:mm a")
-                : "N/A";
+              // const formattedTime = item.timestamp && format(new Date(item.timestamp), "dd MMM yyyy, hh:mm a")
               return (
 
                 <View key={index} style={tw`px-4`}>
@@ -566,8 +578,10 @@ if(matched){
                   <View style={tw`flex-row items-center absolute -right-1 pr-2 top-3`}>
                     <FontAwesome
                       name="circle"
-                      style={tw`border border-gray-300 py-1 px-[5px] rounded-full ${item.activity === "Pickup" ? "text-[#29adf8]" : "text-yellow-500"}`}
-                      size={18}
+                      style={tw`border border-gray-300 py-1 px-[5px] rounded-full 
+                        ${item.activity?.includes("Waiting") ? "text-orange-500" : "text-[#29adf8]"}`}
+                      
+                    size={18}
                     // color={item.activity === "Pickup" ? "blue" : "green"}
                     />
                   </View>
@@ -576,11 +590,18 @@ if(matched){
                   <Text style={tw`text-base font-semibold mt-4`}>{item.activity}</Text>
 
                   {/* Formatted Timestamp */}
-                  <Text style={tw`text-xs text-gray-500`}>{formattedTime}</Text>
+                  {
+                    item.timestampfrom && item.timestampto ? (
+                      <Text style={tw`text-sm text-gray-600 `}>{new Date(item?.timestampfrom).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} - {new Date(item?.timestampto).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                      </Text>
+                    ) : <Text style={tw`text-xs text-gray-500`}>{item.timestamp}</Text>
+                  }
 
                   {/* Other Details */}
                   <Text style={tw`text-sm text-gray-600`}>Location: {item.location}</Text>
-                  <Text style={tw`text-sm text-gray-600`}>Quantity: {item.qty} {item.Type}</Text>
+                  {
+                    item.qty && <Text style={tw`text-sm text-gray-600`}>Quantity: {item.qty} {item.Type}</Text>
+                  }
 
                   {item.notes && (
                     <Text style={tw`text-sm text-gray-500 italic`}>Notes: {item.notes}</Text>
@@ -712,44 +733,6 @@ if(matched){
         </View>
       </Modal>
 
-      {/* Time Selection Modal */}
-      {/* <Modal
-        visible={showTimeModal}
-        transparent={true}
-        animationType="slide"
-      >
-        <View style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}>
-          <View style={tw`bg-white rounded-lg w-80 p-4`}>
-            <Text style={tw`text-lg font-bold mb-4 text-center`}>Select Time</Text>
-
-
-            <View style={tw`h-60`}>
-              <ScrollView showsVerticalScrollIndicator={false}>
-                {timeOptions.map((option) => (
-                  <TouchableOpacity
-                    key={option}
-                    style={tw`py-3 border-b border-gray-200`}
-                    onPress={() => {
-                      setDeliveryTime(option);
-                      setShowTimeModal(false);
-                    }}
-                  >
-                    <Text style={tw`text-center ${deliveryTime === option ? 'font-bold text-blue-500' : ''}`}>{option}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-
-            <TouchableOpacity
-              style={tw`mt-4 bg-gray-200 py-2 rounded-lg`}
-              onPress={() => setShowTimeModal(false)}
-            >
-              <Text style={tw`text-center`}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-      </Modal> */}
 
       {/* Add Note Modal */}
       <Modal
