@@ -269,9 +269,9 @@ const AddTrip: React.FC<AddTripProps> = () => {
   console.log('matched', matched);
 
 
-  if (matched) {
-    Navigation.navigate('HomeScreen');
-  }
+  // if (matched) {
+  //   Navigation.navigate('HomeScreen');
+  // }
 
 
 
@@ -358,7 +358,22 @@ const AddTrip: React.FC<AddTripProps> = () => {
       setLocationSuggestions([]);
     }
   };
-  console.log(' currentDate', deliveryTime);
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
 
   const handleSelectLocation = (suggestion: any) => {
     setConsignee(suggestion.formatted_address);
@@ -413,7 +428,10 @@ const AddTrip: React.FC<AddTripProps> = () => {
           </View>
 
           <View style={tw`flex-row items-center mb-4 w-[100%] relative`}>
-            <Text style={tw`w-24 text-base font-medium`}>{activity === 'Pickup' ? 'Shipper' : 'Consignee:'}</Text>
+            <Text style={tw`w-24 text-base font-medium`}>
+              {
+             activity === 'Pickup'? 'Shipper:': activity === 'Drop-off'|| activity === 'Delivery'? 'Consignee:' : 'Location:'}
+              </Text>
 
             <View style={tw`flex-1`}>
 
@@ -424,7 +442,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
                   setConsignee(text);
                   handleSearchLocation(text);
                 }}
-                placeholder={`${activity === 'Pickup' ? 'Shipper Location' : 'Dropoff Location'}`}
+                placeholder={"Location"}
               />
 
               {locationSuggestions.length > 0 && showsuggestion && (
@@ -509,7 +527,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
             </View>
             <TextInput
               style={tw`h-11 w-full max-w-[75%]  border border-gray-300 rounded px-2.5 mb-4 text-center`}
-              placeholder="Receiver Name"
+              placeholder="Party Name"
               value={receiverName}
               onChangeText={setReceiverName}
               placeholderTextColor="#000"
@@ -557,7 +575,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
               // color={"green"}
               />
             </View>
-            <Text style={tw`text-base font-semibold`}>Start</Text>
+            <Text style={tw`text-base font-semibold`}>Started</Text>
             <Text style={tw`text-xs text-gray-500`}>Start Time: {startedTrip?.start?.timestamp}</Text>
             <Text style={tw`text-xs text-gray-500`}>End Time: {startedTrip?.start?.maxactivitytimelimit}</Text>
             <Text style={tw`text-sm text-gray-600`}>Location: {startedTrip?.start?.location}</Text>
@@ -627,7 +645,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
                 </View>
 
                 {/* Activity Name */}
-                <Text style={tw`text-base font-semibold text-[#ff0000] mt-2`}>Finish</Text>
+                <Text style={tw`text-base font-semibold text-[#ff0000] mt-2`}>Finished</Text>
 
                 {/* Formatted Timestamp */}
                 <Text style={tw`text-xs text-gray-500`}>finish time: {tripdetails?.finish?.timestamp}</Text>
