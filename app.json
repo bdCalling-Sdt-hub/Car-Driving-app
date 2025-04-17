@@ -33,7 +33,14 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+        [
+          "expo-location",
+          {
+            "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location.",
+        "locationWhenInUsePermission": "Allow $(PRODUCT_NAME) to access your location while using the app."
+          }
+        ]
     ],
     "experiments": {
       "typedRoutes": true

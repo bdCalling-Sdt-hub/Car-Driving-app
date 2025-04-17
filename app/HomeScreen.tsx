@@ -19,9 +19,14 @@ const HomeScreen = () => {
   const [apikey, setApikey] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [currentTime, setCurrentTime] = useState('');
+  const [latitude, setLatitude] = useState(0);
+const [longitude, setLongitude] = useState(0);
+console.log('Latitude:', latitude, 'Longitude:', longitude);
   const [formData, setFormData] = useState({
     activity: "",
     location: "",
+    lat: 0,
+    long: 0,
     currentTime: "",
     truck: "",
     trailer: "",
@@ -73,7 +78,9 @@ const HomeScreen = () => {
     // Combine the form data with the currentTime state
     const completeFormData = {
       ...formData,
-      currentTime: currentTime // Ensure currentTime is included
+      currentTime: currentTime || '',
+      lat: latitude,
+      long: longitude
     };
 
     console.log("Form Data:", completeFormData);
@@ -90,6 +97,8 @@ const HomeScreen = () => {
         {
           timestamp: customDate + " " + completeFormData.currentTime,
           location: completeFormData.location,
+          lat: completeFormData.lat,
+          long: completeFormData.long,
           odometer: completeFormData.odometer,
           truck: completeFormData.truck,
           trailer: completeFormData.trailer,
@@ -97,6 +106,7 @@ const HomeScreen = () => {
       ],
     };
 
+    console.log("Trip Data:", tripData);
     try {
       setLoading(true);
       const response = await startNewTrip({ apikey, ...tripData }).unwrap();
@@ -110,6 +120,8 @@ const HomeScreen = () => {
         setFormData({
           activity: "",
           location: "",
+          lat: 0,
+          long: 0,
           currentTime: "",
           truck: "",
           trailer: "",
@@ -144,8 +156,14 @@ const HomeScreen = () => {
       <FormSection
         formData={formData}
         setFormData={setFormData}
+        
         setcurrentTime={setCurrentTime}
         currentTime={currentTime}
+        latitude={latitude}
+        longitude={longitude}
+
+        setLatitude={setLatitude}
+        setLongitude={setLongitude}
         activityList={data?.data?.primarylist || []}
         trucklistandtailorlist={truckandTailordata?.data || []}
       />

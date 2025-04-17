@@ -6,12 +6,15 @@ import {
   TouchableOpacity,
   StyleSheet,
   Modal,
-  FlatList
+  FlatList,
+  Keyboard
 } from "react-native";
 import tw from "twrnc";
 import DatePicker from 'react-native-date-picker';
 import axios from "axios";
 import { MaterialIcons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
+import { useIsFocused } from "@react-navigation/native";
 
 interface FormData {
   activity: string;
@@ -20,6 +23,8 @@ interface FormData {
   trailer: string;
   odometer: string;
   currentTime: string;
+  lat: number;
+  long: number;
 }
 
 interface FormSectionProps {
@@ -32,6 +37,10 @@ interface FormSectionProps {
   };
   setcurrentTime: React.Dispatch<React.SetStateAction<string>>;
   currentTime: string; // Add this prop
+  latitude: number;
+  longitude: number;
+  setLatitude: React.Dispatch<React.SetStateAction<number>>;
+  setLongitude: React.Dispatch<React.SetStateAction<number>>;
 }
 
 const CustomDropdown = ({
@@ -106,7 +115,12 @@ const FormSection: React.FC<FormSectionProps> = ({
   setFormData,
   activityList,
   setcurrentTime,
-  currentTime, // Destructure the new prop
+  currentTime, 
+  latitude,
+  longitude,
+
+  setLatitude,
+  setLongitude,
   trucklistandtailorlist = { trucklist: [], trailerlist: [] },
 }) => {
   const [open, setOpen] = useState(false);
@@ -114,6 +128,9 @@ const FormSection: React.FC<FormSectionProps> = ({
   const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
   const [showsuggestion, setShowsuggestion] = useState(false);
 
+
+const [currentLocation, setCurrentLocation] = useState('');
+console.log('Current Location:', currentLocation);
   const formatTime24Hour = (date: Date) => {
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
@@ -153,9 +170,62 @@ const FormSection: React.FC<FormSectionProps> = ({
   const safeTruckList = trucklistandtailorlist?.trucklist || [];
   const safeTrailerList = trucklistandtailorlist?.trailerlist || [];
   const safeActivityList = activityList || [];
+  const isFocused = useIsFocused();
+  const handleScreenPress = () => {
+    if (showsuggestion) {
+      setShowsuggestion(false);
+      Keyboard.dismiss();
+    }
+  };
+
+
+
+
+  const handleGetLocationFormLS = async () => {
+    try {
+      // Request foreground permission first
+      const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
+      if (foregroundStatus !== 'granted') {
+        console.log('Foreground permission not granted');
+        return;
+      }
+  
+      // Now request background permission
+      const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
+      if (backgroundStatus !== 'granted') {
+        console.log('Background permission not granted');
+        return;
+      }
+  
+      // If both permissions granted, get current position
+      const newLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Highest
+      });
+      const addressResponse = await Location.reverseGeocodeAsync({
+        latitude: newLocation.coords.latitude,
+        longitude: newLocation.coords.longitude,
+      });
+  
+      setCurrentLocation(addressResponse[0].formattedAddress || '');
+      setLatitude(newLocation.coords.latitude);
+      setLongitude(newLocation.coords.longitude);
+
+      console.log('Current Location:', addressResponse);
+    } catch (error) {
+      console.log('Error getting location:', error);
+    }
+  };
+  
+  React.useEffect(() => {
+    handleGetLocationFormLS();
+  }, [isFocused]);
+  
+
+
+
 
   return (
-    <View style={tw`p-4`}>
+    <TouchableOpacity onPress={handleScreenPress} style={tw`p-4`}>
       {/* Activity Dropdown */}
       <View style={tw`flex flex-row items-center justify-between gap-4 mb-3`}>
         <Text style={tw`text-gray-700 font-bold text-[14px]`}>Activity:</Text>
@@ -173,13 +243,14 @@ const FormSection: React.FC<FormSectionProps> = ({
         <Text style={tw`text-gray-700 font-bold text-[14px]`}>Location:</Text>
         <View style={tw`w-[70%]`}>
           <TextInput
+        
             onChangeText={(text) => {
               setFormData({ ...formData, location: text });
               handleSearchLocation(text);
             }}
             style={tw`text-[15px] border border-gray-300 px-2 h-[44px] rounded w-full`}
             placeholder="Enter Your Location"
-            value={formData.location}
+            value={formData.location || currentLocation}
           />
           {locationSuggestions.length > 0 && showsuggestion && (
             <View style={tw`absolute top-[44px] left-0 right-0 bg-white border border-gray-300 rounded z-10 mt-1`}>
@@ -270,7 +341,7 @@ const FormSection: React.FC<FormSectionProps> = ({
           keyboardType="number-pad"
         />
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 

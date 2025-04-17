@@ -33,9 +33,14 @@ const FinishTrip = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [apikey, setApikey] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+    const [latitude, setLatitude] = useState(0);
+  const [longitude, setLongitude] = useState(0);
+
   const [formData, setFormData] = useState({
     activity: "",
     location: "",
+    lat: 0,
+    long: 0,
     currentTime: "",
     truck: "",
     trailer: "",
@@ -94,7 +99,12 @@ const FinishTrip = () => {
   console.log("tripNumber", tripNumber);
   const handleSubmit = async () => {
     console.log("finish Form Data:", formData);
-
+    const completeFormData = {
+      ...formData,
+      currentTime: currentTime || '',
+      lat: latitude,
+      long: longitude
+    };
     // Check if all required fields are filled
     if (!formData.activity || !formData.location || !formData.currentTime || !formData.truck || !formData.trailer || !formData.odometer) {
       return Alert.alert("Error", "Please fill all the fields");
@@ -107,10 +117,12 @@ const FinishTrip = () => {
       finish: [
         {
           timestamp: customDate + " " + formData.currentTime,
-          location: formData.location,
-          odometer: formData.odometer,
-          truck: formData.truck,
-          trailer: formData.trailer,
+          location: completeFormData.location,
+          lat: completeFormData.lat,
+          long: completeFormData.long,
+          odometer: completeFormData.odometer,
+          truck: completeFormData.truck,
+          trailer: completeFormData.trailer,
         },
       ],
     };
@@ -127,6 +139,8 @@ const FinishTrip = () => {
         setFormData({
           activity: "",
           location: "",
+          lat: 0,
+          long: 0,
           currentTime: "",
           truck: "",
           trailer: "",
@@ -154,6 +168,12 @@ const FinishTrip = () => {
         formData={formData}
         setFormData={setFormData}
         setcurrentTime={setCurrentTime}
+        latitude={latitude}
+        longitude={longitude}
+
+        setLatitude={setLatitude}
+        setLongitude={setLongitude}
+
         currentTime={currentTime}
         activityList={data?.data?.primarylist || []}
         trucklistandtailorlist={truckandTailordata?.data || []}
