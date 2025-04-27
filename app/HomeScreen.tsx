@@ -31,6 +31,7 @@ console.log('Latitude:', latitude, 'Longitude:', longitude);
     truck: "",
     trailer: "",
     odometer: "",
+    routeNumber: "",
   });
 
   const getCurrentDate = (): string => {
@@ -87,7 +88,7 @@ console.log('Latitude:', latitude, 'Longitude:', longitude);
 
     // Check if all required fields are filled
     if (!completeFormData.activity || !completeFormData.location || !completeFormData.currentTime || 
-        !completeFormData.truck || !completeFormData.trailer || !completeFormData.odometer) {
+        !completeFormData.truck || !completeFormData.trailer || !completeFormData.odometer || !completeFormData.routeNumber) {
       return Alert.alert("Error", "Please fill all the fields");
     }
 
@@ -100,6 +101,7 @@ console.log('Latitude:', latitude, 'Longitude:', longitude);
           lat: completeFormData.lat,
           long: completeFormData.long,
           odometer: completeFormData.odometer,
+          routeNumber: completeFormData.routeNumber,
           truck: completeFormData.truck,
           trailer: completeFormData.trailer,
         },
@@ -126,6 +128,7 @@ console.log('Latitude:', latitude, 'Longitude:', longitude);
           truck: "",
           trailer: "",
           odometer: "",
+          routeNumber: "",
         });
         setCurrentTime(""); // Clear the currentTime state
         

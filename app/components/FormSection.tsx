@@ -22,6 +22,7 @@ interface FormData {
   truck: string;
   trailer: string;
   odometer: string;
+  routeNumber: string;
   currentTime: string;
   lat: number;
   long: number;
@@ -249,8 +250,8 @@ console.log('Current Location:', currentLocation);
               handleSearchLocation(text);
             }}
             style={tw`text-[15px] border border-gray-300 px-2 h-[44px] rounded w-full`}
-            placeholder="Enter Your Location"
-            value={formData.location || currentLocation}
+            placeholder={`${currentLocation}`}
+            value={formData.location }
           />
           {locationSuggestions.length > 0 && showsuggestion && (
             <View style={tw`absolute top-[44px] left-0 right-0 bg-white border border-gray-300 rounded z-10 mt-1`}>
@@ -266,6 +267,22 @@ console.log('Current Location:', currentLocation);
             </View>
           )}
         </View>
+      </View>
+
+
+         {/*Route Number */}
+         <View style={tw`flex flex-row items-center justify-between gap-4 mb-3`}>
+        <Text style={tw`text-gray-700 font-bold text-[14px]`}>Route #:</Text>
+        <TextInput
+          style={tw`text-[15px] border border-gray-300 px-2 h-[44px] rounded w-[70%]`}
+          placeholder="Enter Route Number"
+          value={formData.routeNumber}
+          onChangeText={(text) => {
+            const numericText = text.replace(/[^0-9]/g, '');
+            setFormData({ ...formData, routeNumber: numericText });
+          }}
+          keyboardType="number-pad"
+        />
       </View>
 
       {/* Current Time */}

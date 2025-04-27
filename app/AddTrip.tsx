@@ -10,7 +10,8 @@ import {
   Alert,
   Modal,
   FlatList,
-  ActivityIndicator
+  ActivityIndicator,
+  Keyboard
 } from 'react-native';
 import { Ionicons, MaterialIcons, AntDesign, FontAwesome } from '@expo/vector-icons';
 import tw from 'twrnc'; // Import twrnc
@@ -116,7 +117,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
   const [note, setNote] = useState<string>('');
   const [startedTrip, setStartedTrip] = useState(null);
   const [AddTripAcvity] = useAddTripAcvityMutation();
-
+  const [TrackingNumber, setTrackingNumber] = useState<string>('');
   const [tripdetails, setTripdetails] = useState(null);
   const [apikey, setApikey] = useState<string>('');
   const Navigation = useNavigation();
@@ -290,6 +291,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
           type,
           partyname: receiverName,
           notes: note,
+          trackingNumber: TrackingNumber
         },
       ],
     };
@@ -359,7 +361,13 @@ const AddTrip: React.FC<AddTripProps> = () => {
     }
   };
 
-  
+
+  const handleScreenPress = () => {
+    if (showsuggestion) {
+      setShowsuggestion(false);
+      Keyboard.dismiss();
+    }
+  };
 
 
 
@@ -373,7 +381,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
 
 
 
-  
+
 
   const handleSelectLocation = (suggestion: any) => {
     setConsignee(suggestion.formatted_address);
@@ -404,7 +412,8 @@ const AddTrip: React.FC<AddTripProps> = () => {
   }
 
   return (
-    <SafeAreaView style={tw`flex-1 bg-white`}>
+
+    <TouchableOpacity onPress={handleScreenPress} style={tw`flex-1 bg-white`}>
       <StatusBar barStyle="light-content" />
       <Header />
 
@@ -429,9 +438,10 @@ const AddTrip: React.FC<AddTripProps> = () => {
 
           <View style={tw`flex-row items-center mb-4 w-[100%] relative`}>
             <Text style={tw`w-24 text-base font-medium`}>
-              {
-             activity === 'Pickup'? 'Shipper:': activity === 'Drop-off'|| activity === 'Delivery'? 'Consignee:' : 'Location:'}
-              </Text>
+              {/* {
+             activity === 'Pickup'? 'Shipper:': activity === 'Drop-off'|| activity === 'Delivery'? 'Consignee:' : 'Location:'} */}
+              Location
+            </Text>
 
             <View style={tw`flex-1`}>
 
@@ -464,7 +474,22 @@ const AddTrip: React.FC<AddTripProps> = () => {
 
           </View>
 
-          <View style={tw`flex-row items-center mb-4`}>
+          {/* Odometer Input */}
+          <View style={tw`flex-row items-center mb-4 w-[100%] relative mt-2`}>
+            <Text style={tw`text-gray-700 font-bold text-[14px]`}>Tracking #:</Text>
+            <TextInput
+              style={tw`text-[15px] border border-gray-300 px-2 h-[44px] rounded  w-[75%] absolute right-0 `}
+              placeholder="Dispatch Tracking Number"
+              value={TrackingNumber}
+              onChangeText={(text) => {
+                const numericText = text.replace(/[^0-9]/g, '');
+                setTrackingNumber(numericText);
+              }}
+              keyboardType="number-pad"
+            />
+          </View>
+
+          <View style={tw`flex-row items-center mb-4 mt-2`}>
             <Text style={tw`w-24 text-base font-medium`}>{activity === 'Pickup' ? 'Pickup' : 'Delivery:'}</Text>
             <View style={tw`flex-1 flex flex-row items-center gap-2`}>
               <View style={tw`flex-1 border border-gray-300 rounded  max-w-[70%]`}>
@@ -598,8 +623,8 @@ const AddTrip: React.FC<AddTripProps> = () => {
                       name="circle"
                       style={tw`border border-gray-300 py-1 px-[5px] rounded-full 
                         ${item.activity?.includes("Waiting") ? "text-orange-500" : "text-[#29adf8]"}`}
-                      
-                    size={18}
+
+                      size={18}
                     // color={item.activity === "Pickup" ? "blue" : "green"}
                     />
                   </View>
@@ -782,7 +807,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </TouchableOpacity>
   );
 };
 

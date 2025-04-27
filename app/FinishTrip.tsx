@@ -45,6 +45,7 @@ const FinishTrip = () => {
     truck: "",
     trailer: "",
     odometer: "",
+    routeNumber: "",
   });
   const [currentTime, setCurrentTime] = useState('');
 
@@ -106,7 +107,7 @@ const FinishTrip = () => {
       long: longitude
     };
     // Check if all required fields are filled
-    if (!formData.activity || !formData.location || !formData.currentTime || !formData.truck || !formData.trailer || !formData.odometer) {
+    if (!formData.activity || !formData.location || !formData.currentTime || !formData.truck || !formData.trailer || !formData.odometer || !formData.routeNumber) {
       return Alert.alert("Error", "Please fill all the fields");
     }
 
@@ -123,6 +124,7 @@ const FinishTrip = () => {
           odometer: completeFormData.odometer,
           truck: completeFormData.truck,
           trailer: completeFormData.trailer,
+          routeNumber: completeFormData.routeNumber
         },
       ],
     };
@@ -145,6 +147,7 @@ const FinishTrip = () => {
           truck: "",
           trailer: "",
           odometer: "",
+          routeNumber: "",
         });
         Alert.alert("Success", "Trip finished successfully!");
         navigation.navigate("AddTrip");
