@@ -1,13 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   Modal,
   FlatList,
-  Keyboard
+  Keyboard,
+  Pressable,
+  ActivityIndicator
 } from "react-native";
 import tw from "twrnc";
 import DatePicker from 'react-native-date-picker';
@@ -16,6 +17,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useIsFocused } from "@react-navigation/native";
 
+// Interfaces remain the same
 interface FormData {
   activity: string;
   location: string;
@@ -37,14 +39,15 @@ interface FormSectionProps {
     trailerlist: { item: string }[];
   };
   setcurrentTime: React.Dispatch<React.SetStateAction<string>>;
-  currentTime: string; // Add this prop
+  currentTime: string;
   latitude: number;
   longitude: number;
   setLatitude: React.Dispatch<React.SetStateAction<number>>;
   setLongitude: React.Dispatch<React.SetStateAction<number>>;
 }
 
-const CustomDropdown = ({
+// Memoized CustomDropdown component
+const CustomDropdown = React.memo(({
   options,
   selectedValue,
   onSelect,
@@ -60,15 +63,15 @@ const CustomDropdown = ({
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <View style={[styles.dropdownContainer, style]}>
+    <View style={[tw`relative z-10`, style]}>
       <TouchableOpacity
-        style={[styles.dropdownHeader, { height: 44 }]}
+        style={tw`flex-row items-center justify-between border border-gray-300 rounded px-3 h-[44px] bg-white`}
         onPress={() => setIsOpen(true)}
       >
-        <Text style={styles.dropdownHeaderText}>
+        <Text style={tw`text-gray-700 ${!selectedValue && 'text-gray-400'}`}>
           {selectedValue || placeholder}
         </Text>
-        <MaterialIcons name="arrow-drop-down" size={24} color="black" />
+        <MaterialIcons name="arrow-drop-down" size={24} color="gray" />
       </TouchableOpacity>
 
       <Modal
@@ -77,39 +80,37 @@ const CustomDropdown = ({
         animationType="fade"
         onRequestClose={() => setIsOpen(false)}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
+        <Pressable
+          style={tw`flex-1 bg-black bg-opacity-30 justify-center items-center`}
           onPress={() => setIsOpen(false)}
         >
-          <View style={styles.modalContent}>
+          <View style={tw`bg-white rounded-lg w-4/5 max-h-[60%] shadow-lg`}>
             <FlatList
               data={options}
-              keyExtractor={(item, index) => index.toString()}
+              keyExtractor={(item, index) => `${item.item}-${index}`}
               renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.modalItem}
+                <Pressable
+                  style={tw`py-3 px-4`}
                   onPress={() => {
                     onSelect(item.item);
                     setIsOpen(false);
                   }}
                 >
-                  <Text style={[
-                    styles.modalItemText,
-                    selectedValue === item.item && styles.selectedItem
-                  ]}>
+                  <Text style={tw`text-gray-800 ${selectedValue === item.item ? 'font-bold text-blue-600' : ''}`}>
                     {item.item}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               )}
-              ItemSeparatorComponent={() => <View style={styles.separator} />}
+              ItemSeparatorComponent={() => <View style={tw`border-t border-gray-200`} />}
+              initialNumToRender={10}
+              windowSize={5}
             />
           </View>
-        </TouchableOpacity>
+        </Pressable>
       </Modal>
     </View>
   );
-};
+});
 
 const FormSection: React.FC<FormSectionProps> = ({
   formData,
@@ -119,7 +120,6 @@ const FormSection: React.FC<FormSectionProps> = ({
   currentTime, 
   latitude,
   longitude,
-
   setLatitude,
   setLongitude,
   trucklistandtailorlist = { trucklist: [], trailerlist: [] },
@@ -128,294 +128,268 @@ const FormSection: React.FC<FormSectionProps> = ({
   const [time, setTime] = useState<Date | null>(null);
   const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
   const [showsuggestion, setShowsuggestion] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState('');
+  const [locationLoading, setLocationLoading] = useState(false);
+  const isFocused = useIsFocused();
 
-
-const [currentLocation, setCurrentLocation] = useState('');
-console.log('Current Location:', currentLocation);
-  const formatTime24Hour = (date: Date) => {
+  // Memoized format function
+  const formatTime24Hour = useCallback((date: Date) => {
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
     return `${hours}:${minutes}`;
-  };
+  }, []);
 
-  const handleSearchLocation = async (query: string) => {
-    if (!query) {
-      setLocationSuggestions([]);
-      return;
-    }
-    try {
-      const response = await axios.get(
-        `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&key=AIzaSyAfW5xjLmNIkot1I438jq0C9cezbx6_uNQ`
-      );
-      setLocationSuggestions(response?.data?.results || []);
-      setShowsuggestion(true);
-    } catch (error) {
-      console.log(error)
-      setLocationSuggestions([]);
-    }
-  };
+  // Debounced location search
+  const debouncedSearchLocation = useMemo(() => {
+    let timeoutId: NodeJS.Timeout;
+    
+    return (query: string) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(async () => {
+        if (!query) {
+          setLocationSuggestions([]);
+          return;
+        }
+        try {
+          const response = await axios.get(
+            `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&key=AIzaSyAfW5xjLmNIkot1I438jq0C9cezbx6_uNQ`
+          );
+          setLocationSuggestions(response?.data?.results || []);
+          setShowsuggestion(true);
+        } catch (error) {
+          console.log('Location search error:', error);
+          setLocationSuggestions([]);
+        }
+      }, 300);
+    };
+  }, []);
 
-  const handleSelectLocation = (suggestion: any) => {
-    setFormData({ ...formData, location: suggestion.formatted_address });
+  // Memoized location select handler
+  const handleSelectLocation = useCallback((suggestion: any) => {
+    setFormData(prev => ({ ...prev, location: suggestion.formatted_address }));
     setLocationSuggestions([]);
     setShowsuggestion(false);
-  };
+    Keyboard.dismiss();
+  }, [setFormData]);
 
-  // Reset time when currentTime is cleared
-  React.useEffect(() => {
+  // Effect to clear time when currentTime is cleared
+  useEffect(() => {
     if (!currentTime) {
       setTime(null);
     }
   }, [currentTime]);
 
-  const safeTruckList = trucklistandtailorlist?.trucklist || [];
-  const safeTrailerList = trucklistandtailorlist?.trailerlist || [];
-  const safeActivityList = activityList || [];
-  const isFocused = useIsFocused();
-  const handleScreenPress = () => {
-    if (showsuggestion) {
-      setShowsuggestion(false);
-      Keyboard.dismiss();
-    }
-  };
+  // Memoized safe lists
+  const safeTruckList = useMemo(() => trucklistandtailorlist?.trucklist || [], [trucklistandtailorlist]);
+  const safeTrailerList = useMemo(() => trucklistandtailorlist?.trailerlist || [], [trucklistandtailorlist]);
+  const safeActivityList = useMemo(() => activityList || [], [activityList]);
 
-
-
-
-  const handleGetLocationFormLS = async () => {
+  // Location handler with proper cleanup
+  const handleGetLocationFormLS = useCallback(async () => {
     try {
-      // Request foreground permission first
+      setLocationLoading(true);
+      
       const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
       if (foregroundStatus !== 'granted') {
         console.log('Foreground permission not granted');
         return;
       }
   
-      // Now request background permission
       const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
       if (backgroundStatus !== 'granted') {
         console.log('Background permission not granted');
         return;
       }
   
-      // If both permissions granted, get current position
       const newLocation = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Highest
+        accuracy: Location.Accuracy.High
       });
+      
       const addressResponse = await Location.reverseGeocodeAsync({
         latitude: newLocation.coords.latitude,
         longitude: newLocation.coords.longitude,
       });
   
-      setCurrentLocation(addressResponse[0].formattedAddress || '');
+      setCurrentLocation(addressResponse[0]?.formattedAddress || '');
       setLatitude(newLocation.coords.latitude);
       setLongitude(newLocation.coords.longitude);
-
-      console.log('Current Location:', addressResponse);
     } catch (error) {
       console.log('Error getting location:', error);
+    } finally {
+      setLocationLoading(false);
     }
-  };
-  
-  React.useEffect(() => {
-    handleGetLocationFormLS();
-  }, [isFocused]);
-  
+  }, [setLatitude, setLongitude]);
 
+  // Location effect with cleanup
+  useEffect(() => {
+    if (isFocused) {
+      handleGetLocationFormLS();
+    }
+  }, [isFocused, handleGetLocationFormLS]);
 
+  // Memoized input change handlers
+  const handleRouteNumberChange = useCallback((text: string) => {
+    const numericText = text.replace(/[^0-9]/g, '');
+    setFormData(prev => ({ ...prev, routeNumber: numericText }));
+  }, [setFormData]);
 
+  const handleOdometerChange = useCallback((text: string) => {
+    const numericText = text.replace(/[^0-9]/g, '');
+    setFormData(prev => ({ ...prev, odometer: numericText }));
+  }, [setFormData]);
+
+  const handleLocationChange = useCallback((text: string) => {
+    setFormData(prev => ({ ...prev, location: text }));
+    debouncedSearchLocation(text);
+  }, [debouncedSearchLocation, setFormData]);
+
+  // Memoized location suggestions list
+  const memoizedLocationSuggestions = useMemo(() => (
+    <View style={tw`absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-20 max-h-60`}>
+      <FlatList
+        data={locationSuggestions}
+        keyExtractor={(item) => item.place_id}
+        renderItem={({ item }) => (
+          <Pressable
+            style={tw`py-3 px-4 border-b border-gray-100`}
+            onPress={() => handleSelectLocation(item)}
+          >
+            <Text style={tw`text-gray-800`}>{item.formatted_address}</Text>
+          </Pressable>
+        )}
+        initialNumToRender={5}
+        windowSize={5}
+      />
+    </View>
+  ), [locationSuggestions, handleSelectLocation]);
 
   return (
-    <TouchableOpacity onPress={handleScreenPress} style={tw`p-4`}>
+    <Pressable 
+      style={tw`p-4`}
+      onPress={() => {
+        if (showsuggestion) {
+          setShowsuggestion(false);
+          Keyboard.dismiss();
+        }
+      }}
+    >
       {/* Activity Dropdown */}
-      <View style={tw`flex flex-row items-center justify-between gap-4 mb-3`}>
-        <Text style={tw`text-gray-700 font-bold text-[14px]`}>Activity:</Text>
+      <View style={tw`flex-row items-center justify-between mb-4`}>
+        <Text style={tw`text-gray-700 font-bold text-sm`}>Activity:</Text>
         <CustomDropdown
-          options={activityList}
+          options={safeActivityList}
           selectedValue={formData?.activity}
-          onSelect={(value) => setFormData({ ...formData, activity: value })}
-          placeholder={`${activityList[0]?.item}`}
+          onSelect={(value) => setFormData(prev => ({ ...prev, activity: value }))}
+          placeholder={`${safeActivityList[0]?.item || 'Select Activity'}`}
           style={tw`w-[70%]`}
         />
       </View>
 
       {/* Location Input */}
-      <View style={tw`flex flex-row items-center justify-between gap-4 mb-3`}>
-        <Text style={tw`text-gray-700 font-bold text-[14px]`}>Location:</Text>
-        <View style={tw`w-[70%]`}>
-          <TextInput
-        
-            onChangeText={(text) => {
-              setFormData({ ...formData, location: text });
-              handleSearchLocation(text);
-            }}
-            style={tw`text-[15px] border border-gray-300 px-2 h-[44px] rounded w-full`}
-            placeholder={`${currentLocation}`}
-            value={formData.location }
-          />
-          {locationSuggestions.length > 0 && showsuggestion && (
-            <View style={tw`absolute top-[44px] left-0 right-0 bg-white border border-gray-300 rounded z-10 mt-1`}>
-              {locationSuggestions.map((suggestion, index) => (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => handleSelectLocation(suggestion)}
-                  style={tw`p-2 border-b border-gray-300`}
-                >
-                  <Text>{suggestion.formatted_address}</Text>
-                </TouchableOpacity>
-              ))}
+      <View style={tw`flex-row items-center justify-between mb-4`}>
+        <Text style={tw`text-gray-700 font-bold text-sm`}>Location:</Text>
+        <View style={tw`w-[70%] relative`}>
+          {locationLoading ? (
+            <View style={tw`border border-gray-300 rounded h-[44px] justify-center items-center`}>
+              <ActivityIndicator size="small" color="#29adf8" />
             </View>
+          ) : (
+            <>
+              <TextInput
+                onChangeText={handleLocationChange}
+                style={tw`text-base border border-gray-300 px-3 h-[44px] rounded w-full bg-white`}
+                placeholder={currentLocation || "Enter location"}
+                value={formData.location}
+                onFocus={() => setShowsuggestion(true)}
+              />
+              
+              {locationSuggestions.length > 0 && showsuggestion && memoizedLocationSuggestions}
+            </>
           )}
         </View>
       </View>
 
-
-         {/*Route Number */}
-         <View style={tw`flex flex-row items-center justify-between gap-4 mb-3`}>
-        <Text style={tw`text-gray-700 font-bold text-[14px]`}>Route #:</Text>
+      {/* Route Number */}
+      <View style={tw`flex-row items-center justify-between mb-4`}>
+        <Text style={tw`text-gray-700 font-bold text-sm`}>Route #:</Text>
         <TextInput
-          style={tw`text-[15px] border border-gray-300 px-2 h-[44px] rounded w-[70%]`}
+          style={tw`text-base border border-gray-300 px-3 h-[44px] rounded w-[70%] bg-white`}
           placeholder="Enter Route Number"
           value={formData.routeNumber}
-          onChangeText={(text) => {
-            const numericText = text.replace(/[^0-9]/g, '');
-            setFormData({ ...formData, routeNumber: numericText });
-          }}
+          onChangeText={handleRouteNumberChange}
           keyboardType="number-pad"
         />
       </View>
 
       {/* Current Time */}
-      <View style={tw`flex flex-row items-center justify-between gap-4 mb-3`}>
-        <Text style={tw`text-gray-700 font-bold text-[14px]`}>Current Time:</Text>
-        <View style={tw`flex-1 border border-gray-300 rounded max-w-[70%]`}>
-          <TouchableOpacity
-            onPress={() => setOpen(true)}
-            style={tw`h-[44px] justify-center`}
-          >
-            <Text style={tw`text-gray-700 text-[15px] px-2`}>
-              {time ? formatTime24Hour(time) : 'Select Time'}
-            </Text>
-          </TouchableOpacity>
+      <View style={tw`flex-row items-center justify-between mb-4`}>
+        <Text style={tw`text-gray-700 font-bold text-sm`}>Current Time:</Text>
+        <Pressable
+          onPress={() => setOpen(true)}
+          style={tw`border border-gray-300 rounded w-[70%] h-[44px] justify-center px-3 bg-white`}
+        >
+          <Text style={tw`text-gray-700 ${!time && 'text-gray-400'}`}>
+            {time ? formatTime24Hour(time) : 'Select Time'}
+          </Text>
+        </Pressable>
 
-          <DatePicker
-            modal
-            mode="time"
-            open={open}
-            date={time || new Date()}
-            onConfirm={(selectedTime) => {
-              setOpen(false);
-              const timeString = formatTime24Hour(selectedTime);
-              setcurrentTime(timeString);
-              setFormData({ ...formData, currentTime: timeString });
-              setTime(selectedTime);
-            }}
-            onCancel={() => {
-              setOpen(false);
-            }}
-            is24hourSource="locale"
-            locale="en_GB"
-          />
-        </View>
+        <DatePicker
+          modal
+          mode="time"
+          open={open}
+          date={time || new Date()}
+          onConfirm={(selectedTime) => {
+            setOpen(false);
+            const timeString = formatTime24Hour(selectedTime);
+            setcurrentTime(timeString);
+            setFormData(prev => ({ ...prev, currentTime: timeString }));
+            setTime(selectedTime);
+          }}
+          onCancel={() => {
+            setOpen(false);
+          }}
+          is24hourSource="locale"
+          locale="en_GB"
+        />
       </View>
 
-      {/* Truck and Trailer Dropdowns */}
-      <View style={tw`flex flex-row items-center justify-between gap-4 mb-3`}>
-        <Text style={tw`text-gray-700 font-bold text-[14px]`}>Select Truck:</Text>
-        <View style={tw`flex flex-row items-center justify-between gap-4 w-[70%]`}>
-          <CustomDropdown
-            options={safeTruckList}
-            selectedValue={formData?.truck || ''}
-            onSelect={(value) => setFormData({ ...formData, truck: value })}
-            placeholder={safeTruckList[0]?.item || 'Select Truck'}
-            style={tw`flex-1`}
-          />
-        </View>
+      {/* Truck Dropdown */}
+      <View style={tw`flex-row items-center justify-between mb-4`}>
+        <Text style={tw`text-gray-700 font-bold text-sm`}>Select Truck:</Text>
+        <CustomDropdown
+          options={safeTruckList}
+          selectedValue={formData?.truck || ''}
+          onSelect={(value) => setFormData(prev => ({ ...prev, truck: value }))}
+          placeholder={safeTruckList[0]?.item || 'Select Truck'}
+          style={tw`w-[70%]`}
+        />
       </View>
 
-      <View style={tw` gap-4 mb-3  flex flex-row items-center justify-between`}>
-        <Text style={tw`text-gray-700 font-bold text-[14px]`}>Select Trailer:</Text>
+      {/* Trailer Dropdown */}
+      <View style={tw`flex-row items-center justify-between mb-4`}>
+        <Text style={tw`text-gray-700 font-bold text-sm`}>Select Trailer:</Text>
         <CustomDropdown
           options={safeTrailerList}
           selectedValue={formData?.trailer || ''}
-          onSelect={(value) => setFormData({ ...formData, trailer: value })}
+          onSelect={(value) => setFormData(prev => ({ ...prev, trailer: value }))}
           placeholder={safeTrailerList[0]?.item || 'Select Trailer'}
-          style={tw`flex-1 max-w-[70%]`}
+          style={tw`w-[70%]`}
         />
       </View>
 
       {/* Odometer Input */}
-      <View style={tw`flex flex-row items-center justify-between gap-4`}>
-        <Text style={tw`text-gray-700 font-bold text-[14px]`}>Odometer:</Text>
+      <View style={tw`flex-row items-center justify-between mb-4`}>
+        <Text style={tw`text-gray-700 font-bold text-sm`}>Odometer:</Text>
         <TextInput
-          style={tw`text-[15px] border border-gray-300 px-2 h-[44px] rounded w-[70%]`}
+          style={tw`text-base border border-gray-300 px-3 h-[44px] rounded w-[70%] bg-white`}
           placeholder="Enter Odometer Reading"
           value={formData.odometer}
-          onChangeText={(text) => {
-            const numericText = text.replace(/[^0-9]/g, '');
-            setFormData({ ...formData, odometer: numericText });
-          }}
+          onChangeText={handleOdometerChange}
           keyboardType="number-pad"
         />
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 
-const styles = StyleSheet.create({
-  dropdownContainer: {
-    position: 'relative',
-    zIndex: 1,
-  },
-  dropdownHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 4,
-    paddingHorizontal: 12,
-    backgroundColor: 'white',
-  },
-  dropdownHeaderText: {
-    fontSize: 15,
-    color: '#374151',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    width: '80%',
-    maxHeight: '60%',
-    backgroundColor: 'white',
-    borderRadius: 8,
-    paddingVertical: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  modalItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  modalItemText: {
-    fontSize: 16,
-    color: '#374151',
-  },
-  selectedItem: {
-    color: '#2563eb',
-    fontWeight: '600',
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#f3f4f6',
-    marginHorizontal: 8,
-  },
-});
-
-export default FormSection;
+export default React.memo(FormSection);

@@ -1,14 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import tw from 'twrnc';
 import Header from './components/Header';
 import FormSection from './components/FormSection';
-import { useActivityDropDownListQuery, useStartNewTripMutation, useTrucksandtailorsQuery } from './redux/features/tripApis/TripApi';
+import { 
+  useActivityDropDownListQuery, 
+  useStartNewTripMutation, 
+  useTrucksandtailorsQuery 
+} from './redux/features/tripApis/TripApi';
 import { Stack } from 'expo-router';
 
-// Define the navigation types
 type RootStackParamList = {
   SignInPage: undefined;
   AddTrip: undefined;
@@ -20,8 +23,9 @@ const HomeScreen = () => {
   const [loading, setLoading] = useState(false);
   const [currentTime, setCurrentTime] = useState('');
   const [latitude, setLatitude] = useState(0);
-const [longitude, setLongitude] = useState(0);
-console.log('Latitude:', latitude, 'Longitude:', longitude);
+  const [longitude, setLongitude] = useState(0);
+
+  // Memoized form data state
   const [formData, setFormData] = useState({
     activity: "",
     location: "",
@@ -34,121 +38,159 @@ console.log('Latitude:', latitude, 'Longitude:', longitude);
     routeNumber: "",
   });
 
-  const getCurrentDate = (): string => {
+  // Memoized current date calculation
+  const currentDate = useMemo(() => {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
     const now = new Date();
-    const day = days[now.getDay()];
-    const month = months[now.getMonth()];
-    const date = now.getDate();
+    return `${days[now.getDay()]} ${months[now.getMonth()]} ${now.getDate()} ${now.getFullYear()}`;
+  }, []);
+
+  // Memoized custom date format
+  const customDate = useMemo(() => {
+    const now = new Date();
     const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }, []);
 
-    return `${day} ${month} ${date} ${year}`;
-  };
-
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const customDate = `${year}-${month}-${day}`;
-  const currentDate = getCurrentDate();
-  
-  // Fetch stored API key
+  // Fetch stored API key with cleanup
   useEffect(() => {
+    let isMounted = true;
+    
     const checkToken = async () => {
-      const token = await AsyncStorage.getItem("token");
-      setApikey(token);
-      if (!token) {
-        navigation.navigate("SignInPage");
-      } else {
-        setApikey(token);
+      try {
+        const token = await AsyncStorage.getItem("token");
+        if (!isMounted) return;
+        
+        if (!token) {
+          navigation.navigate("SignInPage");
+        } else {
+          setApikey(token);
+        }
+      } catch (error) {
+        console.error("Token check error:", error);
+        if (isMounted) {
+          navigation.navigate("SignInPage");
+        }
       }
     };
+
     checkToken();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [navigation]);
 
-  // Fetch dropdown lists only when apikey is available
-  const { data, isLoading, isError } = useActivityDropDownListQuery(apikey ? { apikey } : {}, { skip: !apikey });
-  const { data: truckandTailordata, isLoading: truckLoading, isError: truckError } = useTrucksandtailorsQuery(apikey ? { apikey } : {}, { skip: !apikey });
+  // Optimized dropdown data fetching
+  const { 
+    data: activityData, 
+    isLoading: isActivityLoading 
+  } = useActivityDropDownListQuery(
+    { apikey }, 
+    { skip: !apikey }
+  );
+
+  const { 
+    data: truckandTailordata, 
+    isLoading: isTruckLoading 
+  } = useTrucksandtailorsQuery(
+    { apikey }, 
+    { skip: !apikey }
+  );
 
   const [startNewTrip] = useStartNewTripMutation();
 
-  // Handle form submission
-  const handleSubmit = async () => {
-    // Combine the form data with the currentTime state
-    const completeFormData = {
-      ...formData,
-      currentTime: currentTime || '',
-      lat: latitude,
-      long: longitude
-    };
+  // Memoized activity list
+  const activityList = useMemo(() => 
+    activityData?.data?.primarylist || [], 
+    [activityData]
+  );
 
-    console.log("Form Data:", completeFormData);
+  // Memoized truck and trailer list
+  const trucklistandtailorlist = useMemo(() => 
+    truckandTailordata?.data || [], 
+    [truckandTailordata]
+  );
 
-    // Check if all required fields are filled
-    if (!completeFormData.activity || !completeFormData.location || !completeFormData.currentTime || 
-        !completeFormData.truck || !completeFormData.trailer || !completeFormData.odometer || !completeFormData.routeNumber) {
-      return Alert.alert("Error", "Please fill all the fields");
+  // Form submission handler with cleanup
+  const handleSubmit = useCallback(async () => {
+    if (loading) return;
+
+    // Validate required fields
+    const requiredFields = [
+      'activity', 'location', 'currentTime', 
+      'truck', 'trailer', 'odometer', 'routeNumber'
+    ];
+    
+    const missingFields = requiredFields.filter(field => !formData[field]);
+    if (missingFields.length > 0) {
+      return Alert.alert("Error", "Please fill all the required fields");
     }
 
     const tripData = {
       status: 200,
-      start: [
-        {
-          timestamp: customDate + " " + completeFormData.currentTime,
-          location: completeFormData.location,
-          lat: completeFormData.lat,
-          long: completeFormData.long,
-          odometer: completeFormData.odometer,
-          routeNumber: completeFormData.routeNumber,
-          truck: completeFormData.truck,
-          trailer: completeFormData.trailer,
-        },
-      ],
+      start: [{
+        timestamp: `${customDate} ${currentTime}`,
+        location: formData.location,
+        lat: latitude,
+        long: longitude,
+        odometer: formData.odometer,
+        routeNumber: formData.routeNumber,
+        truck: formData.truck,
+        trailer: formData.trailer,
+      }],
     };
 
-    console.log("Trip Data:", tripData);
     try {
       setLoading(true);
       const response = await startNewTrip({ apikey, ...tripData }).unwrap();
-      console.log("Trip Response:", response);
 
-      if (response?.data?.code === 'invalid') {
-        Alert.alert("Login Error", "Invalid email or password.");
-      } else if (response?.data?.code === 'success') {
-        await AsyncStorage.setItem("startedTrip", JSON.stringify(response?.data));
-        // Reset all form fields including currentTime
-        setFormData({
+      if (response?.data?.code === 'success') {
+        await AsyncStorage.setItem("startedTrip", JSON.stringify(response.data));
+        
+        // Reset form state
+        setFormData(prev => ({
+          ...prev,
           activity: "",
           location: "",
-          lat: 0,
-          long: 0,
           currentTime: "",
           truck: "",
           trailer: "",
           odometer: "",
           routeNumber: "",
-        });
-        setCurrentTime(""); // Clear the currentTime state
+        }));
+        setCurrentTime("");
         
         Alert.alert("Success", "Trip started successfully!");
         navigation.navigate("AddTrip");
       } else {
-        Alert.alert("Error", "Unexpected response from the server.");
+        Alert.alert("Error", response?.data?.message || "Failed to start trip");
       }
     } catch (error) {
-      console.error("Error starting trip:", error);
+      console.error("Trip start error:", error);
       Alert.alert("Error", "Failed to start trip. Please try again.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [
+    formData, 
+    currentTime, 
+    latitude, 
+    longitude, 
+    customDate, 
+    apikey, 
+    loading, 
+    navigation
+  ]);
 
   return (
     <View style={tw`flex-1 bg-white`}>
       <Stack.Screen options={{ headerShown: false }} />
       <Header />
+      
       <View style={tw`flex-row justify-between p-3 bg-[#f1f0f6]`}>
         <Text style={tw`text-lg font-bold text-gray-700`}>Start Your Day</Text>
         <Text style={tw`text-lg font-bold text-gray-700 text-center`}>
@@ -159,21 +201,22 @@ console.log('Latitude:', latitude, 'Longitude:', longitude);
       <FormSection
         formData={formData}
         setFormData={setFormData}
-        
         setcurrentTime={setCurrentTime}
         currentTime={currentTime}
         latitude={latitude}
         longitude={longitude}
-
         setLatitude={setLatitude}
         setLongitude={setLongitude}
-        activityList={data?.data?.primarylist || []}
-        trucklistandtailorlist={truckandTailordata?.data || []}
+        activityList={activityList}
+        trucklistandtailorlist={trucklistandtailorlist}
       />
 
       <View style={tw`flex flex-row items-center justify-end px-4`}>
         <TouchableOpacity
-          style={tw`bg-[#29adf8] p-3 mb-4 rounded w-[100%]`}
+          style={tw.style(
+            `p-3 mb-4 rounded w-[100%]`,
+            loading ? 'bg-gray-400' : 'bg-[#29adf8]'
+          )}
           onPress={handleSubmit}
           disabled={loading}
         >
@@ -183,7 +226,6 @@ console.log('Latitude:', latitude, 'Longitude:', longitude);
         </TouchableOpacity>
       </View>
 
-      {/* Display loading spinner */}
       {loading && (
         <View style={tw`absolute top-0 left-0 right-0 bottom-0 justify-center items-center bg-gray-500 opacity-50`}>
           <ActivityIndicator size="large" color="#fff" />
@@ -193,4 +235,4 @@ console.log('Latitude:', latitude, 'Longitude:', longitude);
   );
 };
 
-export default HomeScreen;
+export default React.memo(HomeScreen);
