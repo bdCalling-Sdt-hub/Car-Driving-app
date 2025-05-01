@@ -25,6 +25,7 @@ import { useActivityDropDownListQuery, useAddTripAcvityMutation, useOneTripAcvit
 import { format } from "date-fns";
 import DatePicker from 'react-native-date-picker';
 import axios from 'axios';
+import { Stack } from 'expo-router';
 
 // Debounce utility function
 const debounce = (func, delay) => {
@@ -260,7 +261,15 @@ const AddTrip: React.FC<AddTripProps> = () => {
         }
       }}
     >
-      <StatusBar barStyle="light-content" />
+      <Stack.Screen  options={
+        { 
+          headerShown: false,
+          animation: 'fade',
+        }
+
+        
+        } />
+      {/* <StatusBar barStyle="light-content" /> */}
       <Header />
 
       {dataLoading ? (
@@ -390,7 +399,7 @@ const AddTrip: React.FC<AddTripProps> = () => {
                   style={tw`w-[33px] h-8 rounded-full bg-green-500 items-center justify-center`}
                   onPress={() => setShowAddNoteModal(true)}
                 >
-                  <AntDesign name="plus" size={24} color="white" />
+                  <AntDesign name="plus" size={24} color="#ffff" />
                 </TouchableOpacity>
               </View>
               <TextInput

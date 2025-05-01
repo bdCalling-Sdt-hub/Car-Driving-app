@@ -151,6 +151,7 @@ const HomeScreen = () => {
       if (response?.data?.code === 'success') {
         await AsyncStorage.setItem("startedTrip", JSON.stringify(response.data));
         
+        navigation.navigate("AddTrip");
         // Reset form state
         setFormData(prev => ({
           ...prev,
@@ -165,7 +166,7 @@ const HomeScreen = () => {
         setCurrentTime("");
         
         Alert.alert("Success", "Trip started successfully!");
-        navigation.navigate("AddTrip");
+        
       } else {
         Alert.alert("Error", response?.data?.message || "Failed to start trip");
       }
@@ -226,11 +227,11 @@ const HomeScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {loading && (
+      {/* {loading && (
         <View style={tw`absolute top-0 left-0 right-0 bottom-0 justify-center items-center bg-gray-500 opacity-50`}>
           <ActivityIndicator size="large" color="#fff" />
         </View>
-      )}
+      )} */}
     </View>
   );
 };
